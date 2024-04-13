@@ -1,16 +1,13 @@
-import { useState } from "react";
+import React from 'react';
 import "./App.css";
-import Login from "./Components/Login/Login";
-import Attendance from "./Components/Attendance/Attendance";
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './Router';
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      {/* <Login /> */}
-      <Attendance />
-    </>
+    <Router>
+      <AppRoutes />
+    </Router>
   );
 }
 
