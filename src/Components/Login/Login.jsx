@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function Login(props) {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
@@ -12,11 +13,16 @@ function Login(props) {
     const handleLogin = (e) => {
         e.preventDefault(); // Prevent form submission
 
+        // Check if email and password are not empty
+        if (!email.trim() || !password.trim()) {
+            alert('Please fill in both email and password fields.');
+            return;
+        }
+
         // Perform login logic here
         // For example, check credentials and authenticate the user
 
         // If login is successful, redirect to admin part
-
     };
 
     return (
@@ -36,8 +42,10 @@ function Login(props) {
                                 <input
                                     id="email"
                                     name="email"
-                                    type=""
+                                    type="text"
                                     autoComplete="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     required
                                     className="atext-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300shadow-md focus:bg-white focus:border-slate-600 focus:outline-none"
                                 />

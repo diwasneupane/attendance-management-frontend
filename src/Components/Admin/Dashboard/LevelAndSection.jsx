@@ -62,27 +62,34 @@ function LevelAndSection() {
     };
 
     const handleDeleteLevel = (levelIndex) => {
+        const teacherName = levels[levelIndex].name;
         confirmAlert({
             title: 'Confirm deletion',
-            message: 'Are you sure you want to delete this level?',
+            message: `Are you sure you want to delete ${teacherName}?`,
             buttons: [
                 {
-                    label: 'Yes',
+                    label: (
+                        <div className="flex items-center">
+                            <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                            <span>Yes</span>
+                        </div>
+                    ),
                     onClick: () => {
                         const updatedLevels = levels.filter((_, index) => index !== levelIndex);
                         setLevels(updatedLevels);
-                        toast.warning('Level deleted successfully.');
+                        toast.warning(`${teacherName} deleted successfully.`);
                     },
-                    className:
-                        "flex items-center justify-center bg-transparent border border-red-500 text-red-500 px-4 py-2 rounded-md mr-2 focus:outline-none hover:bg-red-500 hover:text-white hover:border-transparent"
-
+                    className: "flex items-center justify-center bg-transparent border border-red-500 text-red-500 px-4 py-2 rounded-md mr-2 focus:outline-none hover:bg-red-500 hover:text-white hover:border-transparent"
                 },
                 {
-                    label: 'No',
+                    label: (
+                        <div className="flex items-center">
+                            <FontAwesomeIcon icon={faEdit} className="mr-2" />
+                            <span>No</span>
+                        </div>
+                    ),
                     onClick: () => { },
-                    className:
-                        "flex items-center justify-center bg-transparent border border-blue-500 text-blue-500 px-4 py-2 rounded-md focus:outline-none hover:bg-blue-500 hover:text-white hover:border-transparent"
-
+                    className: "flex items-center justify-center bg-transparent border border-blue-500 text-blue-500 px-4 py-2 rounded-md focus:outline-none hover:bg-blue-500 hover:text-white hover:border-transparent"
                 }
             ]
         });
