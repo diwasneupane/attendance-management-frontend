@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-function Login() {
+function Login(props) {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
@@ -8,17 +9,25 @@ function Login() {
         setShowPassword(!showPassword);
     };
 
+    const handleLogin = (e) => {
+        e.preventDefault(); // Prevent form submission
+
+        // Perform login logic here
+        // For example, check credentials and authenticate the user
+
+        // If login is successful, redirect to admin part
+
+    };
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center">
             <div className="mx-auto w-1/2 mt-4">
                 <img className="mx-auto h-15 w-auto" src="/src/assets/logo.png" alt="Workflow" />
-                <div className="border-b border-solid border-gray-300">
-
-                </div>
+                <div className="border-b border-solid border-gray-300"></div>
             </div>
             <div className="mx-auto w-full max-w-md flex-grow">
                 <div className="bg-white py-8 px-4 shadow-xl md:rounded-lg sm:px-10">
-                    <form className="space-y-6" action="#" method="POST">
+                    <form className="space-y-6" onSubmit={handleLogin}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700 placeholde:true ">
                                 User Name
@@ -57,12 +66,14 @@ function Login() {
                         </div>
 
                         <div>
-                            <button
-                                type="submit"
-                                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                Sign in
-                            </button>
+                            <Link to="/admin/dashboard">
+                                <button
+                                    type="submit"
+                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                >
+                                    Sign in
+                                </button>
+                            </Link>
                         </div>
                     </form>
                 </div>

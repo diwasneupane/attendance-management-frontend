@@ -8,6 +8,7 @@ import Layout from './Layout';
 import TeacherManagement from './Components/Admin/Dashboard/Teacher';
 import Dashboard from './Components/Admin/Dashboard/Dashboard';
 import AttendanceReport from './Components/Admin/Dashboard/AttendanceReport';
+import LevelAndSection from './Components/Admin/Dashboard/LevelAndSection';
 
 function AppRoutes() {
     return (
@@ -19,9 +20,10 @@ function AppRoutes() {
 
             <Route path="/admin" element={<Layout />}>
                 <Route path="/admin/dashboard" element={<Dashboard />} />
-                <Route path="/admin/level-sections" element={<TeacherManagement />} />
+                <Route path="/admin/level-sections" element={<LevelAndSection />} />
                 <Route path="/admin/teachers" element={<TeacherManagement />} />
                 <Route path="/admin/attendance-report" element={<AttendanceReport />} />
+                {/* <Route path="/logout" element={<AttendanceReport />} /> */}
 
             </Route>
         </Routes>
