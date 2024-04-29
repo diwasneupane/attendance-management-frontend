@@ -52,7 +52,7 @@ const Header = ({ toggleSidebar }) => {
       );
       localStorage.removeItem("authToken");
 
-      // Improved toast message with more context and an icon
+
       toast.info("You've successfully logged out. We hope to see you back soon!", {
         position: "top-right",
         autoClose: 3000,
@@ -61,7 +61,7 @@ const Header = ({ toggleSidebar }) => {
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        icon: "👋", // A simple icon to make the toast more engaging
+        icon: "👋",
       });
 
       navigate("/login", { replace: true });
