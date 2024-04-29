@@ -51,6 +51,7 @@ const Header = ({ toggleSidebar }) => {
         }
       );
       localStorage.removeItem("authToken");
+      window.location.reload();
 
 
       toast.info("You've successfully logged out. We hope to see you back soon!", {
