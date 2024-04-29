@@ -83,66 +83,70 @@ function Login() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
             <ToastContainer />
             {isLoading && (
-                <TailSpin color="#4A90E2" height={80} width={80} />
+                <div className="flex justify-center items-center h-16 w-16 mb-4">
+                    <TailSpin color="#4A90E2" height={40} width={40} />
+                </div>
             )}
-            <div className="mx-auto w-1/2 mt-4">
-                <img className="mx-auto h-15 w-auto" src="/src/assets/logo.png" />
-                <div className="border-b border-solid border-gray-300"></div>
-            </div>
-            <div className="mx-auto w-full max-w-md flex-grow">
-                <div className="bg-white py-8 px-4 shadow-xl md:rounded-lg sm:px-10">
-                    <form onSubmit={handleLogin}>
-                        <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                                Username
-                            </label>
+            <div className="w-full max-w-md p-6 space-y-6 bg-white shadow-lg rounded-lg">
+                <div className="flex flex-col items-center space-y-4">
+                    <img
+                        className="h-16 w-auto"
+                        src="/src/assets/logo.png"
+                        alt="Logo"
+                    />
+                    <div className="w-full border-b border-gray-300"></div>
+                </div>
+                <form onSubmit={handleLogin} className="space-y-6">
+                    <div>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                            Username
+                        </label>
+                        <input
+                            id="username"
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            Password
+                        </label>
+                        <div className="relative mt-1">
                             <input
-                                id="username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="block w-full px-3 py-2 border rounded-lg"
+                                type={showPassword ? 'text' : 'password'}
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 required
                             />
-                        </div>
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full px-3 py-2 border rounded-lg"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    className="absolute inset-y-0 right-0 px-3"
-                                    onClick={togglePasswordVisibility}
-                                >
-                                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{ paddingTop: '1rem' }}>
                             <button
-                                type="submit"
-                                className="w-full py-2 px-4 border border-transparent rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                                type="button"
+                                className="absolute inset-y-0 right-0 px-3 flex items-center"
+                                onClick={togglePasswordVisibility}
                             >
-                                Sign In
+                                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                             </button>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                    <div>
+                        <button
+                            type="submit"
+                            className="w-full py-2 px-4 text-white bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        >
+                            Sign In
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
-}
+};
 
 export default Login;

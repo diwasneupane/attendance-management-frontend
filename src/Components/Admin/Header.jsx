@@ -51,10 +51,30 @@ const Header = ({ toggleSidebar }) => {
         }
       );
       localStorage.removeItem("authToken");
-      toast.success("Logged out successfully.");
-      navigate("/login", { replace: true }); // Use replace to prevent history loop
+
+      // Improved toast message with more context and an icon
+      toast.info("You've successfully logged out. We hope to see you back soon!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        icon: "👋", // A simple icon to make the toast more engaging
+      });
+
+      navigate("/login", { replace: true });
     } catch (error) {
-      toast.error("Logout failed. Please try again.");
+      toast.error("Oops! Something went wrong. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     }
   };
 

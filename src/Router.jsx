@@ -24,7 +24,6 @@ function AppRoutes() {
             ) : (
                 <Route path="/login" element={<Login />} />
             )}
-
             <Route path="/update-pin" element={<UpdatePin />} />
             <Route path="/attendance" element={<Attendance />} />
 
