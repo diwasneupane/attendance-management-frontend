@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AiFillEye, AiFillEyeInvisible, AiOutlineSetting } from 'react-icons/ai';
@@ -6,12 +6,12 @@ import { Link } from 'react-router-dom';
 
 const PinInput = () => {
     const defaultPin = '1234';
-    const [pins, setPins] = useState(['', '', '', '']);
-    const [showPin, setShowPin] = useState(false);
     const inputRefs = useRef([]);
+    const pins = useRef(['', '', '', '']);
+    const [showPin, setShowPin] = React.useState(false);
 
     useEffect(() => {
-        inputRefs.current[0].focus();
+        inputRefs.current[0]?.focus(); // Focus the first input on component mount
     }, []);
 
     const handleChange = (index, value) => {
@@ -20,35 +20,34 @@ const PinInput = () => {
             return;
         }
 
-        const newPins = [...pins];
-        newPins[index] = value;
-        setPins(newPins);
+        pins.current[index] = value; // Update the respective PIN value
 
+        // Move focus based on the input value
         if (value === '' && index > 0) {
-            inputRefs.current[index - 1].focus();
-        } else if (value !== '' && index < 3) {
-            inputRefs.current[index + 1].focus();
+            inputRefs.current[index - 1]?.focus();
+        } else if (value && index < 3) {
+            inputRefs.current[index + 1]?.focus();
         }
     };
 
     const handleKeyDown = (index, event) => {
-        if (event.key === 'Backspace' && pins[index] === '' && index > 0) {
-            inputRefs.current[index - 1].focus();
+        if (event.key === 'Backspace' && pins.current[index] === '' && index > 0) {
+            inputRefs.current[index - 1]?.focus(); // Move focus to the previous input
         }
     };
 
     const handleSubmit = () => {
-        const pin = pins.join('');
-        if (pin === '') {
+        const pin = pins.current.join(''); // Combine the PINs
+        if (!pin) {
             toast.error('Please enter your PIN.');
             return;
         }
         if (pin === defaultPin) {
-            window.location.href = '/attendance';
+            window.location.href = '/attendance'; // Navigate to the attendance page if correct PIN
         } else {
             toast.error('Invalid PIN. Please try again.');
-            setPins(['', '', '', '']);
-            inputRefs.current[0].focus();
+            pins.current = ['', '', '', '']; // Clear the PIN inputs
+            inputRefs.current[0]?.focus(); // Focus the first input
         }
     };
 
@@ -57,7 +56,7 @@ const PinInput = () => {
             <div className="max-w-sm">
                 <img src="/src/assets/logo.png" alt="Logo" className="mx-auto mb-8" />
                 <div className="grid grid-cols-4 gap-2">
-                    {pins.map((pin, index) => (
+                    {pins.current.map((pin, index) => (
                         <input
                             key={index}
                             ref={(el) => (inputRefs.current[index] = el)}

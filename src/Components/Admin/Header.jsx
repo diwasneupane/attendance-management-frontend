@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBars, faCircleChevronDown, faUserCog, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBars,
+  faCircleChevronDown,
+  faUserCog,
+  faSignOutAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { getAuthToken } from "../../Auth";
-
-const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1/";
+import "react-confirm-alert/src/react-confirm-alert.css";
+import { confirmAlert } from "react-confirm-alert";
 
 const Header = ({ toggleSidebar }) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -16,12 +17,6 @@ const Header = ({ toggleSidebar }) => {
 
   const toggleDropdown = () => {
     setShowDropdown((prev) => !prev);
-  };
-
-  const closeDropdown = () => {
-    if (showDropdown) {
-      setShowDropdown(false);
-    }
   };
 
   useEffect(() => {
@@ -38,57 +33,38 @@ const Header = ({ toggleSidebar }) => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      const token = getAuthToken();
-      await axios.post(
-        `${baseURL}/admin/admin-logout`,
-        {},
+  const handleLogout = () => {
+    confirmAlert({
+      title: "Confirm Logout",
+      message: "Are you sure you want to logout?",
+      buttons: [
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
+          label: "Yes",
+          onClick: () => {
+            localStorage.removeItem("authToken");
+            navigate("/login", { replace: true });
+            window.location.reload(); // Optional, to refresh the application state
           },
-        }
-      );
-      localStorage.removeItem("authToken");
-      window.location.reload();
-
-
-      toast.info("You've successfully logged out. We hope to see you back soon!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        icon: "👋",
-      });
-
-      navigate("/login", { replace: true });
-    } catch (error) {
-      toast.error("Oops! Something went wrong. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-    }
+        },
+        {
+          label: "No",
+          onClick: () => {
+            // Do nothing, just close the confirmation dialog
+          },
+        },
+      ],
+    });
   };
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
       <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-700">
         <div className="px-5 py-4 lg:px-10 flex justify-between items-center">
           <div className="flex items-center">
             <button
               type="button"
               className="p-3 text-gray-500 rounded-lg hover:bg-gray-100"
-              onClick={toggleSidebar} // Toggle the sidebar on smaller screens
+              onClick={toggleSidebar}
             >
               <FontAwesomeIcon icon={faBars} />
             </button>
@@ -117,7 +93,7 @@ const Header = ({ toggleSidebar }) => {
                     className="block py-2 px-4 hover:bg-gray-200 w-full text-left"
                     onClick={() => {
                       navigate("/admin/change-password");
-                      closeDropdown();
+                      setShowDropdown(false);
                     }}
                   >
                     <FontAwesomeIcon icon={faUserCog} />

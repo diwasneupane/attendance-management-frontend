@@ -1,29 +1,47 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChalkboardTeacher,
   faBook,
   faClipboardList,
-  faTachometerAlt,
   faSignOutAlt,
   faBars,
-  faHome
+  faHome,
 } from "@fortawesome/free-solid-svg-icons";
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 
-function SideNav(props) {
+const SideNav = ({ toggleSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    confirmAlert({
+      title: "Confirm Logout",
+      message: "Are you sure you want to log out?",
+      buttons: [
+        {
+          label: "Yes",
+          onClick: () => {
+            localStorage.removeItem("authToken");
+            navigate("/login", { replace: true });
+            window.location.reload();
+          },
+        },
+        {
+          label: "No", // If the user cancels, just return without doing anything
+        },
+      ],
+    });
+  };
 
   return (
     <aside className="fixed top-0 left-0 z-40 w-64 h-full bg-white dark:bg-gray-800 shadow-lg">
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4">
-          <img
-            src="/src/assets/logo.png"
-            className="h-8 w-auto"
-            alt="Logo"
-          />
-          <button className="lg:hidden">
+          <img src="/src/assets/logo.png" className="h-8 w-auto" alt="Logo" />
+          <button className="lg:hidden" onClick={toggleSidebar}>
             <FontAwesomeIcon icon={faBars} className="text-gray-500" />
           </button>
         </div>
@@ -80,17 +98,17 @@ function SideNav(props) {
           </ul>
         </nav>
         <div className="p-4">
-          <NavLink
-            to="/login"
+          <button
+            onClick={handleLogout} // Call handleLogout on click
             className="flex items-center justify-center w-full px-4 py-2 ring-1 ring-slate-700 rounded-md focus:outline-none focus:ring focus:ring-slate-300 hover:ring-2 transition-transform"
           >
             <FontAwesomeIcon icon={faSignOutAlt} className="w-5 h-5 mr-2" />
             <span>Logout</span>
-          </NavLink>
+          </button>
         </div>
       </div>
     </aside>
   );
-}
+};
 
 export default SideNav;

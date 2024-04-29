@@ -7,6 +7,7 @@ import { TailSpin } from 'react-loader-spinner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as yup from 'yup';
+import { delay } from 'framer-motion';
 
 const validationSchema = yup.object().shape({
     username: yup.string().required('Username is required'),
@@ -59,7 +60,7 @@ function Login() {
             }
 
             localStorage.setItem('authToken', accessToken);
-            toast.success('Login successful!');
+            toast.success('Login successful!', 2000);
 
             navigate('/admin/dashboard', { replace: true });
         } catch (error) {

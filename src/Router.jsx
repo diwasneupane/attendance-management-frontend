@@ -11,6 +11,7 @@ import AttendanceReport from './Components/Admin/Dashboard/AttendanceReport';
 import LevelAndSection from './Components/Admin/Dashboard/LevelAndSection';
 import ProtectedRoute from './ProtectedRoutes';
 import NotFound from './404NotFound';
+import ChangePassword from './Components/Admin/ChangePassword';
 
 function AppRoutes() {
     const authToken = localStorage.getItem('authToken');
@@ -35,6 +36,7 @@ function AppRoutes() {
                     <Route path="/admin/level-sections" element={<LevelAndSection />} />
                     <Route path="/admin/teachers" element={<TeacherManagement />} />
                     <Route path="/admin/attendance-report" element={<AttendanceReport />} />
+                    <Route path="/admin/change-password" element={<ChangePassword />} />
                 </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
