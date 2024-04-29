@@ -60,7 +60,7 @@ const NotFound = () => {
             </motion.p>
 
             {/* Create a button to navigate back to the home page */}
-            <Link to="/" className="mt-4">
+            <Link to="/admin" className="mt-4">
                 <motion.button
                     className="flex items-center justify-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
                     whileHover={{ scale: 1.1 }} // Animation on hover
