@@ -1,87 +1,142 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { TailSpin } from 'react-loader-spinner';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import * as yup from 'yup';
 
-function Login(props) {
-    const [email, setEmail] = useState('');
+const validationSchema = yup.object().shape({
+    username: yup.string().required('Username is required'),
+    password: yup.string().required('Password must be at least 6 characters'),
+});
+
+function Login() {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1/';
+
+    const axiosInstance = axios.create({
+        baseURL,
+    });
 
     const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
+        setShowPassword((prevState) => !prevState);
     };
 
-    const handleLogin = (e) => {
-        e.preventDefault(); // Prevent form submission
+    const validateForm = () => {
+        try {
+            validationSchema.validateSync({ username, password });
+            return true;
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
 
-        // Check if email and password are not empty
-        if (!email.trim() || !password.trim()) {
-            alert('Please fill in both email and password fields.');
+    const handleLogin = async (e) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
             return;
         }
 
-        // Perform login logic here
-        // For example, check credentials and authenticate the user
+        setIsLoading(true);
 
-        // If login is successful, redirect to admin part
+        try {
+            const response = await axiosInstance.post('admin/admin-login', { username, password });
+
+            const { accessToken } = response.data.data;
+
+            if (!accessToken) {
+                throw new Error('Access token is undefined');
+            }
+
+            localStorage.setItem('authToken', accessToken);
+            toast.success('Login successful!');
+
+            navigate('/admin/dashboard', { replace: true });
+        } catch (error) {
+            let errorMessage = 'An error occurred. Please try again.';
+
+            if (error.response) {
+                const { status, data } = error.response;
+
+                if (status === 404) {
+                    errorMessage = 'Admin not found. Please check your username.';
+                } else if (status === 400) {
+                    errorMessage = data.message || 'Invalid credentials. Please try again.';
+                }
+            } else {
+                errorMessage = error.message || errorMessage;
+            }
+
+            toast.error(errorMessage);
+            setIsLoading(false);
+        }
     };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center">
+            <ToastContainer />
+            {isLoading && (
+                <TailSpin color="#4A90E2" height={80} width={80} />
+            )}
             <div className="mx-auto w-1/2 mt-4">
-                <img className="mx-auto h-15 w-auto" src="/src/assets/logo.png" alt="Workflow" />
+                <img className="mx-auto h-15 w-auto" src="/src/assets/logo.png" />
                 <div className="border-b border-solid border-gray-300"></div>
             </div>
             <div className="mx-auto w-full max-w-md flex-grow">
                 <div className="bg-white py-8 px-4 shadow-xl md:rounded-lg sm:px-10">
-                    <form className="space-y-6" onSubmit={handleLogin}>
+                    <form onSubmit={handleLogin}>
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 placeholde:true ">
-                                User Name
+                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                                Username
                             </label>
-                            <div className="mt-1">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="text"
-                                    autoComplete="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="atext-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300shadow-md focus:bg-white focus:border-slate-600 focus:outline-none"
-                                />
-                            </div>
+                            <input
+                                id="username"
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="block w-full px-3 py-2 border rounded-lg"
+                                required
+                            />
                         </div>
-
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 ">
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <div className="mt-1 relative">
+                            <div className="relative">
                                 <input
+                                    type={showPassword ? 'text' : 'password'}
                                     id="password"
-                                    name="password"
-                                    type={showPassword ? "text" : "password"}
                                     value={password}
-                                    autoComplete="current-password"
                                     onChange={(e) => setPassword(e.target.value)}
+                                    className="block w-full px-3 py-2 border rounded-lg"
                                     required
-                                    className="atext-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300shadow-md focus:bg-white focus:border-slate-600 focus:outline-none"
                                 />
-                                <button type="button" className="absolute inset-y-0 right-0 px-3 py-2" onClick={togglePasswordVisibility}>
-                                    <i className={`fa ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`} />
+                                <button
+                                    type="button"
+                                    className="absolute inset-y-0 right-0 px-3"
+                                    onClick={togglePasswordVisibility}
+                                >
+                                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                                 </button>
                             </div>
                         </div>
-
-                        <div>
-                            <Link to="/admin/dashboard">
-                                <button
-                                    type="submit"
-                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                >
-                                    Sign in
-                                </button>
-                            </Link>
+                        <div style={{ paddingTop: '1rem' }}>
+                            <button
+                                type="submit"
+                                className="w-full py-2 px-4 border border-transparent rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                            >
+                                Sign In
+                            </button>
                         </div>
                     </form>
                 </div>
