@@ -130,7 +130,8 @@ const Sidebar = () => {
           <Link
             key={index}
             to={item.route}
-            className="relative p-3 transition-colors cursor-pointer flex items-center"
+            className="relative p-3 transition-colors cursor-pointer flex items-center "
+
             style={{
               borderRightWidth: "3px",
               borderRightColor: "transparent",

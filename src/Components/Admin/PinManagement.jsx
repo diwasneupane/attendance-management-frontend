@@ -1,24 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { confirmAlert } from 'react-confirm-alert';
-import 'react-confirm-alert/src/react-confirm-alert.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+    faPlus,
+    faEdit,
+    faTrash,
+    faSave,
+} from "@fortawesome/free-solid-svg-icons";
 
-// Base URL for the API
+// Custom styling to hide number input arrows in different browsers
+const numberInputStyle = {
+    WebkitAppearance: "none", // Hide arrows in Chrome/Safari
+    MozAppearance: "textfield", // Hide arrows in Firefox
+    appearance: "none", // Hide arrows in Edge/IE
+};
+
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000/api/v1', // Update with your API base URL
+    baseURL: "http://localhost:3000/api/v1",
     headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
     },
 });
 
-// Interceptor to add authorization token to requests
 axiosInstance.interceptors.request.use(
     (config) => {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem("authToken");
         if (authToken) {
             config.headers.Authorization = `Bearer ${authToken}`;
         }
@@ -27,156 +37,228 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-const TeacherManagement = () => {
-    const [teachers, setTeachers] = useState([]); // Initial empty array for teachers
-    const [formData, setFormData] = useState({ name: '' }); // Form data for adding/updating teachers
-    const [editingIndex, setEditingIndex] = useState(null); // Index of the teacher being edited
+const PinManagement = () => {
+    const [pins, setPins] = useState([]);
+    const [newPin, setNewPin] = useState("");
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editedPin, setEditedPin] = useState("");
+    const [validationError, setValidationError] = useState("");
 
     useEffect(() => {
-        console.log('useEffect triggered'); // Log to confirm the effect runs
-
-        const fetchTeachers = async () => {
+        const fetchPins = async () => {
             try {
-                console.log('Fetching teachers...'); // Log when starting to fetch
-                const response = await axiosInstance.get('/teacher/get-teachers'); // Ensure correct endpoint
-                console.log('Fetch response:', response.data); // Log the response
-                setTeachers(response.data.data || []); // Update the state
+                const response = await axiosInstance.get("/pin/view");
+                setPins(response.data.data || []);
             } catch (error) {
-                console.error('Error fetching teachers:', error); // Log errors
-                toast.error('Error fetching teachers');
+                toast.error("Error fetching PINs.");
             }
         };
 
-        fetchTeachers(); // Call the function
+        fetchPins();
     }, []);
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value })); // Update form data
+
+    const handleNewPinChange = (e) => {
+        const value = e.target.value;
+        if (value.length > 4) {
+            setValidationError("PIN must be exactly 4 digits.");
+        } else {
+            setValidationError("");
+        }
+        setNewPin(value);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
-
-        if (!formData.name.trim()) {
-            toast.error('Please enter a valid teacher name.');
+    const handleAddPin = () => {
+        if (newPin.trim().length !== 4) {
+            toast.error("PIN must be exactly 4 digits.");
             return;
         }
 
-        if (editingIndex !== null) {
-            const teacherId = teachers[editingIndex]._id; // Ensure correct ID is used for update
-
-            try {
-                await axiosInstance.patch(`/teacher/update-teacher/${teacherId}`, { name: formData.name }); // Update teacher
-                setTeachers((prev) => {
-                    const updated = [...prev];
-                    updated[editingIndex].name = formData.name; // Update the name in the list
-                    return updated;
-                });
-                setEditingIndex(null); // Reset editing state
-                setFormData({ name: '' }); // Clear form
-                toast.success('Teacher updated successfully.');
-            } catch (error) {
-                toast.error('Error updating teacher');
-            }
-        } else {
-            try {
-                const response = await axiosInstance.post('/teacher/create-teacher', { name: formData.name }); // Create new teacher
-                setTeachers((prev) => [...prev, response.data.data]); // Add to the list
-                setFormData({ name: '' }); // Clear form
-                toast.success('Teacher added successfully.');
-            } catch (error) {
-                toast.error('Error adding teacher');
-            }
-        }
-    };
-
-    const handleEdit = (index) => {
-        setFormData({ name: teachers[index].name }); // Load existing name into the form
-        setEditingIndex(index); // Set the editing index
-    };
-
-    const handleDelete = (index) => {
-        const teacherId = teachers[index]._id; // Get the correct ID for deletion
-        const teacherName = teachers[index].name; // Get the teacher's name
-
         confirmAlert({
-            title: 'Confirm Deletion',
-            message: `Are you sure you want to delete ${teacherName}?`,
+            title: "Confirm Action",
+            message: "Are you sure you want to add this PIN?",
             buttons: [
                 {
-                    label: 'Yes',
+                    label: "Yes",
                     onClick: async () => {
                         try {
-                            await axiosInstance.delete(`/teacher/delete-teacher/${teacherId}`); // Delete teacher
-                            setTeachers((prev) => prev.filter((_, i) => i !== index)); // Remove from the list
-                            toast.success(`${teacherName} deleted successfully.`);
+                            const response = await axiosInstance.post("/pin/add", {
+                                pin: newPin,
+                            });
+                            setPins((prev) => [
+                                ...prev,
+                                { _id: response.data.data._id, pin: newPin },
+                            ]);
+                            setNewPin("");
+                            toast.success("PIN added successfully.");
                         } catch (error) {
-                            toast.error('Error deleting teacher');
+                            toast.error("Error adding PIN.");
                         }
                     },
                 },
                 {
-                    label: 'No',
+                    label: "No",
+                },
+            ],
+        });
+    };
+
+    const handleEditPin = (index) => {
+        setEditingIndex(index);
+        setEditedPin(pins[index].pin);
+    };
+
+    const handleEditedPinChange = (e) => {
+        const value = e.target.value;
+        if (value.length <= 4) {
+            setEditedPin(value);
+        } else {
+            setValidationError("PIN must be exactly 4 digits.");
+        }
+    };
+
+    const handleSaveEdit = () => {
+        if (editedPin.trim().length !== 4) {
+            toast.error("PIN must be exactly 4 digits.");
+            return;
+        }
+
+        confirmAlert({
+            title: "Confirm Action",
+            message: "Are you sure you want to update this PIN?",
+            buttons: [
+                {
+                    label: "Yes",
+                    onClick: async () => {
+                        const pinId = pins[editingIndex]._id;
+                        try {
+                            await axiosInstance.put(`/pin/update/${pinId}`, {
+                                newPin: editedPin,
+                            });
+                            setPins((prev) => {
+                                const updated = [...prev];
+                                updated[editingIndex].pin = editedPin;
+                                return updated;
+                            });
+                            setEditingIndex(null);
+                            toast.success("PIN updated successfully.");
+                        } catch (error) {
+                            toast.error("Error updating PIN.");
+                        }
+                    },
+                },
+                {
+                    label: "No",
+                },
+            ],
+        });
+    };
+
+    const handleDeletePin = (index) => {
+        const pinId = pins[index]._id;
+
+        confirmAlert({
+            title: "Confirm Deletion",
+            message: "Are you sure you want to delete this PIN?",
+            buttons: [
+                {
+                    label: "Yes",
+                    onClick: async () => {
+                        try {
+                            await axiosInstance.delete(`/pin/delete/${pinId}`);
+                            setPins((prev) => prev.filter((_, i) => i !== index));
+                            toast.success("PIN deleted successfully.");
+                        } catch (error) {
+                            toast.error("Error deleting PIN.");
+                        }
+                    },
+                },
+                {
+                    label: "No",
                 },
             ],
         });
     };
 
     return (
-        <div className="p-6 bg-gray-100">
+        <div className="p-6  flex justify-center items-center">
             <ToastContainer autoClose={3000} position="top-center" />
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-semibold mb-4">Manage Teachers</h2>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="flex items-center">
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="Enter Teacher Name"
-                            className="flex-grow p-3 border rounded-md"
-                        />
-                        <button
-                            type="submit"
-                            className="bg-blue-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-blue-600"
-                        >
-                            {editingIndex !== null ? 'Update' : 'Add'} // Change label based on the context
-                        </button>
-                    </div>
-                </form>
+            <div
+                className="bg-white p-8 border-2 border-dashed border-gray-300 rounded-lg shadow-lg w-full md:w-2/3 lg:w-1/2 xl:w-1/3"
+            >
+                <h2 className="text-2xl font-semibold text-center mb-6">Manage PINs</h2>
 
-                <div className="mt-4">
-                    {teachers.length > 0 ? (
-                        teachers.map((teacher, index) => (
-                            <div key={index} className="flex justify-between items-center border p-4 rounded-md">
-                                <span>{teacher.name}</span>
+                <div className="mb-6">
+                    <input
+                        type="number"
+                        placeholder="Enter new PIN"
+                        value={newPin}
+                        onChange={handleNewPinChange}
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        style={numberInputStyle}
+                    />
+                    {validationError && (
+                        <p className="text-red-500 text-sm">{validationError}</p>
+                    )}
+                    <button
+                        onClick={handleAddPin}
+                        className="mt-3 bg-indigo-500 text-white px-5 py-3 rounded-md hover:bg-indigo-600 transition-all duration-200 w-full"
+                    >
+                        <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                        Add PIN
+                    </button>
+                </div>
 
-                                <div className="flex">
+                {pins.length > 0 ? (
+                    <div className="space-y-4">
+                        {pins.map((pin, index) => (
+                            <div
+                                key={index}
+                                className="flex justify-between items-center border-b pb-4"
+                            >
+                                {editingIndex === index ? (
+                                    <input
+                                        type="text"
+                                        value={editedPin}
+                                        onChange={handleEditedPinChange}
+                                        className="w-full p-3 border border-gray-300 rounded-md"
+                                    />
+                                ) : (
+                                    <span className="text-lg">{pin.pin}</span>
+                                )}
+
+                                <div className="flex items-center space-x-2">
+                                    {editingIndex === index ? (
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            className="text-green-500 hover:text-green-700"
+                                        >
+                                            <FontAwesomeIcon icon={faSave} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleEditPin(index)}
+                                            className="text-blue-500 hover:text-blue-700"
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} />
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={() => handleEdit(index)}
-                                        className="text-blue-500 hover:text-blue-700 ml-2"
-                                    >
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-
-                                    <button
-                                        onClick={() => handleDelete(index)}
-                                        className="text-red-500 hover:text-red-700 ml-2"
+                                        onClick={() => handleDeletePin(index)}
+                                        className="text-red-500 hover:text-red-700"
                                     >
                                         <FontAwesomeIcon icon={faTrash} />
                                     </button>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <p>No teachers found.</p> // Display message if list is empty
-                    )}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500">No PINs found.</p>
+                )}
             </div>
         </div>
     );
 };
 
-export default TeacherManagement;
+export default PinManagement;

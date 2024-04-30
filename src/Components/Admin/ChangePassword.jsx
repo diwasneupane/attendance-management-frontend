@@ -78,16 +78,16 @@ const ChangePassword = () => {
     };
 
     return (
-        <div className="flex justify-center items-center py-10 bg-gray-50">
+        <div className="flex justify-center items-center py-8">
             <ToastContainer autoClose={3000} position="top-right" />
-            <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md">
+            <div className="max-w-md w-full p-8 bg-white rounded-lg border-2 border-dashed shadow-md">
                 <h2 className="text-2xl font-semibold text-center mb-6 text-[#0141CF]">
                     Change Password
                 </h2>
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-6">
-                        <label className="block text-gray-700" htmlFor="currentPassword">
+                        <label className="block text-gray-700 pb-2" htmlFor="currentPassword">
                             Current Password
                         </label>
                         <div className="flex items-center relative">
@@ -97,7 +97,7 @@ const ChangePassword = () => {
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                 required
-                                className="w-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border-2 border-black  rounded-lg"
                             />
                             <button
                                 type="button"
@@ -112,7 +112,7 @@ const ChangePassword = () => {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-gray-700" htmlFor="newPassword">
+                        <label className="block text-gray-700 pb-2" htmlFor="newPassword">
                             New Password
                         </label>
                         <div className="flex items-center relative">
@@ -122,7 +122,7 @@ const ChangePassword = () => {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
-                                className="w-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border-2 border-black  rounded-lg"
                             />
                             <button
                                 type="button"
@@ -137,7 +137,7 @@ const ChangePassword = () => {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-gray-700" htmlFor="confirmPassword">
+                        <label className="block text-gray-700 pb-2" htmlFor="confirmPassword">
                             Confirm Password
                         </label>
                         <div className="flex items-center relative">
@@ -147,7 +147,7 @@ const ChangePassword = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                className="w-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border-2 border-black  rounded-lg"
                             />
                             <button
                                 type="button"
