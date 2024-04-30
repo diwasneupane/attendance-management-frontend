@@ -4,22 +4,21 @@ import Opening from './Components/Attendance/Opening';
 import Attendance from './Components/Attendance/Attendance';
 import UpdatePin from './Components/Attendance/UpdatePin';
 import Login from './Components/Login/Login';
-import Layout from './Layout';
+import ProtectedRoute from './ProtectedRoutes';
+import NotFound from './404NotFound';
+import ChangePassword from './Components/Admin/ChangePassword';
+import PinManagement from './Components/Admin/PinManagement';
 import TeacherManagement from './Components/Admin/Dashboard/Teacher';
 import Dashboard from './Components/Admin/Dashboard/Dashboard';
 import AttendanceReport from './Components/Admin/Dashboard/AttendanceReport';
 import LevelAndSection from './Components/Admin/Dashboard/LevelAndSection';
-import ProtectedRoute from './ProtectedRoutes';
-import NotFound from './404NotFound';
-import ChangePassword from './Components/Admin/ChangePassword';
 
 function AppRoutes() {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem('authToken'); // Check if the user is authenticated
 
     return (
         <Routes>
-            <Route path="/" element={<Opening />} />
-
+            <Route path="/" element={<Opening />} /> {/* Root path */}
             {authToken ? (
                 <Route path="/login" element={<Navigate to="/admin/dashboard" replace />} />
             ) : (
@@ -29,20 +28,20 @@ function AppRoutes() {
             <Route path="/attendance" element={<Attendance />} />
 
             <Route element={<ProtectedRoute />}>
-                <Route path="/admin" element={<Layout />}>
-                    <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
-                    <Route path="/admin/dashboard" element={<Dashboard />} />
-                    <Route path="/admin/level-sections" element={<LevelAndSection />} />
-                    <Route path="/admin/teachers" element={<TeacherManagement />} />
-                    <Route path="/admin/attendance-report" element={<AttendanceReport />} />
-                    <Route path="/admin/change-password" element={<ChangePassword />} />
-                </Route>
+                <Route path="/admin/dashboard" element={<Dashboard />} />
+                <Route path="/admin/level-sections" element={<LevelAndSection />} />
+                <Route path="/admin/teachers" element={<TeacherManagement />} />
+                <Route path="/admin/attendance-report" element={<AttendanceReport />} />
+                <Route path="/admin/change-password" element={<ChangePassword />} />
+                <Route path="/admin/change-pin" element={<PinManagement />} />
             </Route>
+
+            {/* Handle any undefined routes */}
             <Route path="*" element={<NotFound />} />
         </Routes>
     );
 }
-
 
 export default AppRoutes;

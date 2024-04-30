@@ -1,17 +1,18 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AiFillEye, AiFillEyeInvisible, AiOutlineSetting } from 'react-icons/ai';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-const PinInput = () => {
-    const defaultPin = '1234';
+const Opening = () => {
+    const navigate = useNavigate();
     const inputRefs = useRef([]);
-    const pins = useRef(['', '', '', '']);
-    const [showPin, setShowPin] = React.useState(false);
+    const [pins, setPins] = useState(['', '', '', '']);
+    const [showPin, setShowPin] = useState(false);
 
     useEffect(() => {
-        inputRefs.current[0]?.focus(); // Focus the first input on component mount
+        inputRefs.current[0]?.focus();
     }, []);
 
     const handleChange = (index, value) => {
@@ -20,9 +21,10 @@ const PinInput = () => {
             return;
         }
 
-        pins.current[index] = value; // Update the respective PIN value
+        const newPins = [...pins];
+        newPins[index] = value;
+        setPins(newPins);
 
-        // Move focus based on the input value
         if (value === '' && index > 0) {
             inputRefs.current[index - 1]?.focus();
         } else if (value && index < 3) {
@@ -31,23 +33,30 @@ const PinInput = () => {
     };
 
     const handleKeyDown = (index, event) => {
-        if (event.key === 'Backspace' && pins.current[index] === '' && index > 0) {
-            inputRefs.current[index - 1]?.focus(); // Move focus to the previous input
+        if (event.key === 'Backspace' && pins[index] === '' && index > 0) {
+            inputRefs.current[index - 1]?.focus();
         }
     };
 
-    const handleSubmit = () => {
-        const pin = pins.current.join(''); // Combine the PINs
+    const handleSubmit = async () => {
+        const pin = pins.join('');
         if (!pin) {
             toast.error('Please enter your PIN.');
             return;
         }
-        if (pin === defaultPin) {
-            window.location.href = '/attendance'; // Navigate to the attendance page if correct PIN
-        } else {
+
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/pin/validate`);
+            console.log(response);
+            if (response.status === 200) {
+                toast.success('PIN is valid!');
+                navigate('/attendance');
+            }
+
+        } catch (error) {
             toast.error('Invalid PIN. Please try again.');
-            pins.current = ['', '', '', '']; // Clear the PIN inputs
-            inputRefs.current[0]?.focus(); // Focus the first input
+            setPins(['', '', '', '']);
+            inputRefs.current[0]?.focus();
         }
     };
 
@@ -56,7 +65,7 @@ const PinInput = () => {
             <div className="max-w-sm">
                 <img src="/src/assets/logo.png" alt="Logo" className="mx-auto mb-8" />
                 <div className="grid grid-cols-4 gap-2">
-                    {pins.current.map((pin, index) => (
+                    {pins.map((pin, index) => (
                         <input
                             key={index}
                             ref={(el) => (inputRefs.current[index] = el)}
@@ -92,4 +101,4 @@ const PinInput = () => {
     );
 };
 
-export default PinInput;
+export default Opening;

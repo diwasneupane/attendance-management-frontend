@@ -102,7 +102,7 @@ function LevelAndSection() {
     };
 
     return (
-        <div className="p-4 sm:ml-64 py-20 bg-gray-100">
+        <div className="p-4  py-6 bg-gray-100">
             <ToastContainer />
             <div className="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
                 <div className="bg-white p-6 rounded-lg">

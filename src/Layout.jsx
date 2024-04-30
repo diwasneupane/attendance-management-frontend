@@ -1,22 +1,32 @@
-import React from "react";
-import Header from "./Components/Admin/Header.jsx";
-import SideNav from "./Components/Admin/SideNav.jsx";
-import { Outlet } from "react-router-dom";
+import React from 'react';
+import Sidebar from './Components/Admin/SideNav'; // Sidebar component
+import { Outlet } from 'react-router-dom';
+import Header from './Components/Admin/Header';
 
-const HEADER_HEIGHT = 640; // Adjust to match the height of your Header
+const Layout = () => {
+    // const headerHeight = '0rem'; // Example height of the header
 
-function Layout() {
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header />
-            <Outlet />
-            <div className="flex flex-1" style={{ marginTop: HEADER_HEIGHT }}>
-                <SideNav className="w-64 fixed" style={{ top: HEADER_HEIGHT }} />
-                <div className="flex-1 ml-64">
+        <div className="flex h-screen">
+            {/* Sidebar with fixed width */}
+            <Sidebar />
+
+            <div className="flex flex-1 flex-col ">
+
+                <div >
+                    <Header />
+                </div>
+
+                {/* Main content with padding to prevent hiding behind the header */}
+                <div
+                    className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900"
+                // style={{ paddingTop: headerHeight }} // Add padding to avoid overlapping
+                >
+                    <Outlet /> {/* Outlet renders child routes */}
                 </div>
             </div>
         </div>
     );
-}
+};
 
 export default Layout;
