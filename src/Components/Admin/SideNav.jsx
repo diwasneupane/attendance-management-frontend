@@ -15,6 +15,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import logo from "../../assets/logo.png";
+import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { confirmAlert } from "react-confirm-alert";
+import { toast } from "react-toastify";
 
 const sidebarItems = [
   { name: "Dashboard", icon: FaHome, color: "text-indigo-600", route: "/admin/dashboard" },
@@ -81,6 +85,49 @@ const Sidebar = () => {
       transition: { duration: 0.4, ease: "easeInOut" },
     },
   };
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    confirmAlert({
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to log out?',
+      buttons: [
+        {
+          label: 'Yes',
+          onClick: async () => {
+            try {
+              const authToken = localStorage.getItem("authToken");
+
+              await axios.post(
+                "http://localhost:3000/api/v1/admin/admin-logout",
+                {},
+                {
+                  headers: {
+                    Authorization: `Bearer ${authToken}`, // Pass the token
+                  },
+                }
+              );
+
+              localStorage.removeItem("authToken"); // Clear local storage
+
+              toast.success("Logged out successfully."); // Success message
+              navigate("/login"); // Redirect to login
+              window.location.reload()
+            } catch (error) {
+              console.error("Error during logout:", error);
+              toast.error("Failed to log out. Please try again."); // Error message
+            }
+          },
+        },
+        {
+          label: 'No', // Cancel button
+          onClick: () => {
+            toast.info("Logout canceled."); // Info message
+          },
+        },
+      ],
+    });
+  };
+
 
   return (
     <motion.div
@@ -156,7 +203,7 @@ const Sidebar = () => {
       <motion.div className="border-t border-gray-300 my-4"></motion.div>
 
       <Link
-        to="/login"
+
         className="mt-auto p-3 relative flex items-center cursor-pointer"
         style={{
           borderRightWidth: "3px",
@@ -171,10 +218,14 @@ const Sidebar = () => {
           e.currentTarget.style.boxShadow = "none";
         }}
       >
-        <motion.div whileHover={hoverEffect} className="flex items-center">
+        <motion.div
+          whileHover={hoverEffect}
+          className="p-3 relative flex items-center cursor-pointer"
+          onClick={handleLogout} // Call logout handler
+        >
           <FaSignOutAlt className="text-red-600" />
+          {!collapsed && <span className="ml-2 text-sm">Logout</span>}
         </motion.div>
-        {!collapsed && <span className="ml-2 text-sm">Logout</span>}
       </Link>
     </motion.div>
   );

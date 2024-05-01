@@ -23,7 +23,6 @@ const ChangePassword = () => {
             setShowConfirmPassword(!showConfirmPassword);
         }
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -32,18 +31,8 @@ const ChangePassword = () => {
             return;
         }
 
-        if (newPassword.length < 8) {
-            toast.error("New password must be at least 8 characters long.");
-            return;
-        }
-
         if (newPassword !== confirmPassword) {
-            toast.error("New password and confirm password must match.");
-            return;
-        }
-
-        if (currentPassword === newPassword) {
-            toast.error("New password cannot be the same as the current password.");
+            toast.error("New passwords do not match."); // Error check for password mismatch
             return;
         }
 
@@ -54,8 +43,8 @@ const ChangePassword = () => {
                 "http://localhost:3000/api/v1/admin/admin-updatePassword", // Endpoint for password update
                 {
                     oldPassword: currentPassword,
-                    newPassword,
-                    confirmPassword, // Ensure this field is included in the request
+                    newPassword: newPassword,
+                    confirmNewPassword: confirmPassword,
                 },
                 {
                     headers: {
@@ -130,7 +119,7 @@ const ChangePassword = () => {
                                 className="p-2 text-gray-600"
                             >
                                 <FontAwesomeIcon
-                                    icon={showCurrentPassword ? faEyeSlash : faEye}
+                                    icon={showNewPassword ? faEyeSlash : faEye}
                                 />
                             </button>
                         </div>
@@ -155,7 +144,7 @@ const ChangePassword = () => {
                                 className="p-2 text-gray-600"
                             >
                                 <FontAwesomeIcon
-                                    icon={showCurrentPassword ? faEyeSlash : faEye}
+                                    icon={showConfirmPassword ? faEyeSlash : faEye}
                                 />
                             </button>
                         </div>

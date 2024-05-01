@@ -47,6 +47,7 @@ const AttendanceReport = () => {
                 const response = await axiosInstance.get('/attendance/get-attendance');
                 if (response.status === 200 && Array.isArray(response.data.data)) {
                     setReportData(response.data.data);
+                    console.log(response.data.data);
                 } else {
                     throw new Error('Unexpected response format');
                 }
@@ -74,6 +75,7 @@ const AttendanceReport = () => {
     const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     const handleEdit = (item) => {
+        console.log(item);
         setEditingRow(item._id);
         setEditForm({
             teacher: item.teacher,

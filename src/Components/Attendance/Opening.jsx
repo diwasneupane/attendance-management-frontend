@@ -100,10 +100,7 @@ const Opening = () => {
                 >
                     Submit
                 </button>
-                <Link to="/update-pin" className="block text-center mt-2 text-indigo-600">
-                    <AiOutlineSetting size={24} className="inline-block mr-1" />
-                    Change PIN
-                </Link>
+
             </div>
             <ToastContainer autoClose={3000} />
         </div>
