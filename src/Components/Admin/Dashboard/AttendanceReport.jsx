@@ -15,10 +15,11 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ReactDatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-// Base URL for the Axios instance
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000/api/v1', // Adjust as needed
+    baseURL: 'http://localhost:3000/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -33,93 +34,58 @@ const AttendanceReport = () => {
 
     const [editingRow, setEditingRow] = useState(null);
     const [editForm, setEditForm] = useState({
-        name: '',
-        date: '',
+        teacher: '',
         level: '',
         section: '',
-        checkIn: '',
-        checkOut: '',
+        checkInTime: new Date(),
+        checkOutTime: new Date(),
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axiosInstance.get('/attendance/get-attendance');
-
-                console.log("Response status:", response.status); // For debugging
-                console.log("Response data:", response.data); // Verify structure
-
-                if (
-                    response.status === 200 &&
-                    response.data &&
-                    Array.isArray(response.data.data) // Ensure response contains an array
-                ) {
-                    setReportData(response.data.data); // Set fetched data
+                if (response.status === 200 && Array.isArray(response.data.data)) {
+                    setReportData(response.data.data);
                 } else {
-                    throw new Error("Unexpected response format");
+                    throw new Error('Unexpected response format');
                 }
             } catch (error) {
-                console.error("Error fetching attendance data:", error);
-                toast.error("Error fetching attendance data.");
-                setReportData([]); // Fallback to an empty array in case of error
+                console.error('Error fetching attendance data:', error);
+                toast.error('Error fetching attendance data.');
+                setReportData([]);
             }
         };
 
-        fetchData(); // Fetch data when component mounts
-    }, []); // Dependency array is empty to avoid re-fetching
+        fetchData();
+    }, []);
 
-    // Filtered data with proper checks
-    const filteredData = Array.isArray(reportData)
-        ? reportData.filter((item) => {
-            const teacherName = item.teacher ? item.teacher.toLowerCase() : '';
-            const levelName = item.level ? item.level.toLowerCase() : '';
-            return (
-                teacherName.includes(searchName.toLowerCase()) &&
-                levelName.includes(searchLevel.toLowerCase())
-            );
-        })
-        : [];
+    const filteredData = reportData.filter((item) => {
+        const teacherName = item.teacher ? item.teacher.toLowerCase() : '';
+        const levelName = item.level ? item.level.toLowerCase() : '';
+        return (
+            teacherName.includes(searchName.toLowerCase()) &&
+            levelName.includes(searchLevel.toLowerCase())
+        );
+    });
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => {
-        if (pageNumber > 0 && pageNumber <= Math.ceil(filteredData.length / itemsPerPage)) {
-            setCurrentPage(pageNumber);
-        }
-    };
-
-    const handleDownload = async () => {
-        try {
-            const response = await axiosInstance.get('/attendance/get-attendance-excel', {
-                responseType: 'blob', // Needed for downloading files
-            });
-
-            const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.setAttribute('download', 'attendance_report.xlsx'); // Set the filename
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            toast.success('Download started.');
-        } catch (error) {
-            toast.error('Error downloading attendance data.');
-        }
-    };
-
     const handleEdit = (item) => {
-        setEditingRow(item.id);
+        setEditingRow(item._id);
         setEditForm({
-            name: item.teacher,
-            date: new Date(item.checkInTime).toLocaleDateString(), // Example date format
+            teacher: item.teacher,
             level: item.level,
             section: item.section,
-            checkIn: item.checkInTime,
-            checkOut: item.checkOutTime,
+            checkInTime: new Date(item.checkInTime),
+            checkOutTime: new Date(item.checkOutTime),
         });
+    };
+
+    const handleChange = (field, value) => {
+        setEditForm((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleSaveEdit = async () => {
@@ -129,10 +95,17 @@ const AttendanceReport = () => {
         }
 
         try {
-            await axiosInstance.put(`/attendance/update-attendance/${editingRow}`, editForm);
+            await axiosInstance.put(`/attendance/update-attendance/${editingRow}`, {
+                ...editForm,
+                checkInTime: editForm.checkInTime.toISOString(),
+                checkOutTime: editForm.checkOutTime.toISOString(),
+            });
 
-            setReportData((prev) => prev.map((data) => (data.id === editingRow ? editForm : data)));
-            setEditingRow(null); // Reset the editing row
+            setReportData((prev) =>
+                prev.map((data) => (data._id === editingRow ? { ...editForm, _id: data._id } : data))
+            );
+
+            setEditingRow(null);
             toast.success('Attendance record updated successfully.');
         } catch (error) {
             toast.error('Error updating attendance record.');
@@ -148,8 +121,8 @@ const AttendanceReport = () => {
                     label: 'Yes',
                     onClick: async () => {
                         try {
-                            await axiosInstance.delete(`/attendance/delete-attendance/${item.id}`);
-                            setReportData((prev) => prev.filter((data) => data.id !== item.id));
+                            await axiosInstance.delete(`/attendance/delete-attendance/${item._id}`);
+                            setReportData((prev) => prev.filter((data) => data._id !== item._id));
                             toast.success('Record deleted successfully.');
                         } catch (error) {
                             toast.error('Error deleting attendance record.');
@@ -163,11 +136,30 @@ const AttendanceReport = () => {
         });
     };
 
-    const handleChange = (field, value) => {
-        setEditForm((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
+    const handleDownload = async () => {
+        try {
+            const response = await axiosInstance.get('/attendance/get-attendance-excel', {
+                responseType: 'blob',
+            });
+
+            const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', 'attendance_report.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            toast.success('Download started.');
+        } catch (error) {
+            toast.error('Error downloading attendance report.');
+        }
+    };
+
+    const paginate = (pageNumber) => {
+        if (pageNumber > 0 && pageNumber <= Math.ceil(filteredData.length / itemsPerPage)) {
+            setCurrentPage(pageNumber);
+        }
     };
 
     return (
@@ -184,7 +176,7 @@ const AttendanceReport = () => {
                             placeholder="Search by Name"
                             value={searchName}
                             onChange={(e) => setSearchName(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-10 pr-4 py-2 border rounded-md"
                         />
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
@@ -197,16 +189,16 @@ const AttendanceReport = () => {
                             placeholder="Search by Level"
                             value={searchLevel}
                             onChange={(e) => setSearchLevel(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-10 pr-4 py-2 border rounded-md"
                         />
-                        <div className="absolute inset-y-0 left-0 flex items with pl-3">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                         </div>
                     </div>
 
                     <button
                         onClick={handleDownload}
-                        className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md"
                     >
                         <FontAwesomeIcon icon={faDownload} className="mr-2" />
                         Download
@@ -214,109 +206,119 @@ const AttendanceReport = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 text-center">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S No</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-In</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-Out</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-3">#</th>
+                                <th className="px-6 py-3">Teacher</th>
+                                <th className="px-6 py-3">Level</th>
+                                <th className="px-6 py-3">Section</th>
+                                <th className="px-6 py-3">Time-In Time</th>
+                                <th className="px-6 py-3">Time-Out Time</th>
+                                <th className="px-6 py-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {currentItems.map((item, index) => (
-                                <tr key={item.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{indexOfFirstItem + index + 1}</td>
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.name}
-                                            onChange={(e) => handleChange('name', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{item.teacher}</td>
-                                    )}
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.date}
-                                            onChange={(e) => handleChange('date', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{new Date(item.checkInTime).toLocaleDateString()}</td>
-                                    )}
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.level}
-                                            onChange={(e) => handleChange('level', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{item.level}</td>
-                                    )}
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.section}
-                                            onChange={(e) => handleChange('section', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{item.section}</td>
-                                    )}
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.checkIn}
-                                            onChange={(e) => handleChange('checkIn', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{item.checkIn}</td>
-                                    )}
-                                    {editingRow === item.id ? (
-                                        <input
-                                            type="text"
-                                            value={editForm.checkOut}
-                                            onChange={(e) => handleChange('checkOut', e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : (
-                                        <td>{item.checkOut}</td>
-                                    )}
+                                <tr key={item._id}>
+                                    <td className="px-6 py-4">{indexOfFirstItem + index + 1}</td>
                                     <td>
-                                        {editingRow === item.id ? (
-                                            <div className="flex gap-2">
+                                        {editingRow === item._id ? (
+                                            <input
+                                                key={`teacher-${item._id}`}
+                                                type="text"
+                                                value={editForm.teacher}
+                                                onChange={(e) => setEditForm({ ...editForm, teacher: e.target.value })}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            <span key={`view-teacher-${item._id}`}>{item.teacher}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {editingRow === item._id ? (
+                                            <input
+                                                key={`level-${item._id}`}
+                                                type="text"
+                                                value={editForm.level}
+                                                onChange={(e) => setEditForm({ ...editForm, level: e.target.value })}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            <span key={`view-level-${item._id}`}>{item.level}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {editingRow === item._id ? (
+                                            <input
+                                                key={`section-${item._id}`}
+                                                type="text"
+                                                value={editForm.section}
+                                                onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            <span key={`view-section-${item._id}`}>{item.section}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {editingRow === item._id ? (
+                                            <ReactDatePicker
+                                                key={`check-in-${item._id}`}
+                                                selected={editForm.checkInTime}
+                                                onChange={(date) => setEditForm({ ...editForm, checkInTime: date })}
+                                                showTimeSelect
+                                                dateFormat="Pp"
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            <span key={`view-check-in-${item._id}`}>{new Date(item.checkInTime).toLocaleString()}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {editingRow === item._id ? (
+                                            <ReactDatePicker
+                                                key={`check-out-${item._id}`}
+                                                selected={editForm.checkOutTime}
+                                                onChange={(date) => setEditForm({ ...editForm, checkOutTime: date })}
+                                                showTimeSelect
+                                                dateFormat="Pp"
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            <span key={`view-check-out-${item._id}`}>{new Date(item.checkOutTime).toLocaleString()}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {editingRow === item._id ? (
+                                            <div className="flex justify-center gap-2">
                                                 <button
-                                                    className="text-green-500 hover:text-green-700"
+                                                    key={`save-${item._id}`}
+                                                    className="text-green-500"
                                                     onClick={handleSaveEdit}
                                                 >
                                                     <FontAwesomeIcon icon={faSave} />
                                                 </button>
                                                 <button
-                                                    className="text-red-500 hover:text-red-700"
-                                                    onClick={handleCancelEdit}
+                                                    key={`cancel-${item._id}`}
+                                                    className="text-red-500"
+                                                    onClick={() => setEditingRow(null)}
                                                 >
                                                     <FontAwesomeIcon icon={faTimes} />
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex gap-2">
+                                            <div className="flex justify-center gap-2">
                                                 <button
-                                                    className="text-blue-500 hover:text-blue-700"
+                                                    key={`edit-${item._id}`}
+                                                    className="text-blue-500"
                                                     onClick={() => handleEdit(item)}
                                                 >
                                                     <FontAwesomeIcon icon={faEdit} />
                                                 </button>
                                                 <button
-                                                    className="text-red-500 hover:text-red-700"
+                                                    key={`delete-${item._id}`}
+                                                    className="text-red-500"
                                                     onClick={() => handleDelete(item)}
                                                 >
                                                     <FontAwesomeIcon icon={faTrash} />
@@ -333,14 +335,16 @@ const AttendanceReport = () => {
                 <div className="mt-4 flex justify-between">
                     <button
                         onClick={() => paginate(currentPage - 1)}
-                        className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 bg-blue-500 text-white rounded-md`}
                     >
                         <FontAwesomeIcon icon={faChevronLeft} />
                         Previous
                     </button>
                     <button
                         onClick={() => paginate(currentPage + 1)}
-                        className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ${currentItems.length < itemsPerPage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={currentItems.length < itemsPerPage}
+                        className={`px-4 py-2 bg-blue-500 text-white rounded-md`}
                     >
                         Next
                         <FontAwesomeIcon icon={faChevronRight} />

@@ -1,264 +1,110 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { confirmAlert } from "react-confirm-alert";
-import "react-confirm-alert/src/react-confirm-alert.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-    faPlus,
-    faEdit,
-    faTrash,
-    faSave,
-} from "@fortawesome/free-solid-svg-icons";
+import React, { useEffect, useState, useRef } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { AiFillEye, AiFillEyeInvisible, AiOutlineSetting } from 'react-icons/ai';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-// Custom styling to hide number input arrows in different browsers
-const numberInputStyle = {
-    WebkitAppearance: "none", // Hide arrows in Chrome/Safari
-    MozAppearance: "textfield", // Hide arrows in Firefox
-    appearance: "none", // Hide arrows in Edge/IE
-};
+const baseURL = 'http://localhost:3000/api/v1';
 
-const axiosInstance = axios.create({
-    baseURL: "http://localhost:3000/api/v1",
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-axiosInstance.interceptors.request.use(
-    (config) => {
-        const authToken = localStorage.getItem("authToken");
-        if (authToken) {
-            config.headers.Authorization = `Bearer ${authToken}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-const PinManagement = () => {
-    const [pins, setPins] = useState([]);
-    const [newPin, setNewPin] = useState("");
-    const [editingIndex, setEditingIndex] = useState(null);
-    const [editedPin, setEditedPin] = useState("");
-    const [validationError, setValidationError] = useState("");
+const Opening = () => {
+    const navigate = useNavigate();
+    const inputRefs = useRef([]);
+    const [pins, setPins] = useState(['', '', '', '']);
+    const [showPin, setShowPin] = useState(false);
 
     useEffect(() => {
-        const fetchPins = async () => {
-            try {
-                const response = await axiosInstance.get("/pin/view");
-                setPins(response.data.data || []);
-            } catch (error) {
-                toast.error("Error fetching PINs.");
-            }
-        };
-
-        fetchPins();
+        inputRefs.current[0]?.focus();
     }, []);
 
-    const handleNewPinChange = (e) => {
-        const value = e.target.value;
-        if (value.length > 4) {
-            setValidationError("PIN must be exactly 4 digits.");
-        } else {
-            setValidationError("");
-        }
-        setNewPin(value);
-    };
-
-    const handleAddPin = () => {
-        if (newPin.trim().length !== 4) {
-            toast.error("PIN must be exactly 4 digits.");
+    const handleChange = (index, value) => {
+        if (!/^[0-9]*$/.test(value)) {
+            toast.error('Please enter numbers only.');
             return;
         }
 
-        confirmAlert({
-            title: "Confirm Action",
-            message: "Are you sure you want to add this PIN?",
-            buttons: [
-                {
-                    label: "Yes",
-                    onClick: async () => {
-                        try {
-                            const response = await axiosInstance.post("/pin/add", {
-                                pin: newPin,
-                            });
-                            setPins((prev) => [
-                                ...prev,
-                                { _id: response.data.data._id, pin: newPin },
-                            ]);
-                            setNewPin("");
-                            toast.success("PIN added successfully.");
-                        } catch (error) {
-                            toast.error("Error adding PIN.");
-                        }
-                    },
-                },
-                {
-                    label: "No",
-                },
-            ],
-        });
-    };
+        const newPins = [...pins];
+        newPins[index] = value;
+        setPins(newPins);
 
-    const handleEditPin = (index) => {
-        setEditingIndex(index);
-        setEditedPin(pins[index].pin);
-    };
-
-    const handleEditedPinChange = (e) => {
-        const value = e.target.value;
-        if (value.length <= 4) {
-            setEditedPin(value);
-        } else {
-            setValidationError("PIN must be exactly 4 digits.");
+        if (value && index < 3) {
+            inputRefs.current[index + 1]?.focus();
+        } else if (!value && index > 0) {
+            inputRefs.current[index - 1]?.focus();
         }
     };
 
-    const handleSaveEdit = () => {
-        if (editedPin.trim().length !== 4) {
-            toast.error("PIN must be exactly 4 digits.");
+    const handleSubmit = async () => {
+        const pin = pins.join('');
+        if (!pin) {
+            toast.error('Please enter your PIN.');
             return;
         }
 
-        confirmAlert({
-            title: "Confirm Action",
-            message: "Are you sure you want to update this PIN?",
-            buttons: [
-                {
-                    label: "Yes",
-                    onClick: async () => {
-                        const pinId = pins[editingIndex]._id;
-                        try {
-                            await axiosInstance.put(`/pin/update/${pinId}`, {
-                                newPin: editedPin,
-                            });
-                            setPins((prev) => {
-                                const updated = [...prev];
-                                updated[editingIndex].pin = editedPin;
-                                return updated;
-                            });
-                            setEditingIndex(null);
-                            toast.success("PIN updated successfully.");
-                        } catch (error) {
-                            toast.error("Error updating PIN.");
-                        }
-                    },
-                },
-                {
-                    label: "No",
-                },
-            ],
-        });
-    };
-
-    const handleDeletePin = (index) => {
-        const pinId = pins[index]._id;
-
-        confirmAlert({
-            title: "Confirm Deletion",
-            message: "Are you sure you want to delete this PIN?",
-            buttons: [
-                {
-                    label: "Yes",
-                    onClick: async () => {
-                        try {
-                            await axiosInstance.delete(`/pin/delete/${pinId}`);
-                            setPins((prev) => prev.filter((_, i) => i !== index));
-                            toast.success("PIN deleted successfully.");
-                        } catch (error) {
-                            toast.error("Error deleting PIN.");
-                        }
-                    },
-                },
-                {
-                    label: "No",
-                },
-            ],
-        });
+        try {
+            const response = await axios.post(`${baseURL}/pin/validate`, { pin });
+            if (response.status === 200) {
+                toast.success('PIN is valid!');
+                navigate('/attendance');
+            } else {
+                throw new Error('Invalid PIN');
+            }
+        } catch (error) {
+            toast.error('Invalid PIN. Please try again.');
+            setPins(['', '', '', '']);
+            inputRefs.current[0]?.focus();
+        }
     };
 
     return (
-        <div className="p-6  flex justify-center items-center">
-            <ToastContainer autoClose={3000} position="top-center" />
-
-            <div
-                className="bg-white p-8 border-2 border-dashed border-gray-300 rounded-lg shadow-lg w-full md:w-2/3 lg:w-1/2 xl:w-1/3"
-            >
-                <h2 className="text-2xl font-semibold text-center mb-6">Manage PINs</h2>
-
-                <div className="mb-6">
-                    <input
-                        type="number"
-                        placeholder="Enter new PIN"
-                        value={newPin}
-                        onChange={handleNewPinChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        style={numberInputStyle}
-                    />
-                    {validationError && (
-                        <p className="text-red-500 text-sm">{validationError}</p>
-                    )}
-                    <button
-                        onClick={handleAddPin}
-                        className="mt-3 bg-indigo-500 text-white px-5 py-3 rounded-md hover:bg-indigo-600 transition-all duration-200 w-full"
-                    >
-                        <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                        Add PIN
-                    </button>
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+            <div className="max-w-sm">
+                <img src="/src/assets/logo.png" alt="Logo" className="mx-auto mb-8" />
+                <div className="grid grid-cols-4 gap-2">
+                    {pins.map((pin, index) => (
+                        <input
+                            key={index}
+                            ref={(el) => (inputRefs.current[index] = el)}
+                            type={showPin ? 'text' : 'password'}
+                            value={pin}
+                            onChange={(e) => handleChange(index, e.target.value)}
+                            className="w-full px-4 py-2 text-lg text-center bg-gray-200 rounded-lg focus:outline-none"
+                            maxLength={1}
+                        />
+                    ))}
                 </div>
-
-                {pins.length > 0 ? (
-                    <div className="space-y-4">
-                        {pins.map((pin, index) => (
-                            <div
-                                key={index}
-                                className="flex justify-between items-center border-b pb-4"
-                            >
-                                {editingIndex === index ? (
-                                    <input
-                                        type="text"
-                                        value={editedPin}
-                                        onChange={handleEditedPinChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md"
-                                    />
-                                ) : (
-                                    <span className="text-lg">{pin.pin}</span>
-                                )}
-
-                                <div className="flex items-center space-x-2">
-                                    {editingIndex === index ? (
-                                        <button
-                                            onClick={handleSaveEdit}
-                                            className="text-green-500 hover:text-green-700"
-                                        >
-                                            <FontAwesomeIcon icon={faSave} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => handleEditPin(index)}
-                                            className="text-blue-500 hover:text-blue-700"
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleDeletePin(index)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-center text-gray-500">No PINs found.</p>
-                )}
+                <div className="flex justify-center mt-2">
+                    {showPin ? (
+                        <AiFillEyeInvisible
+                            size={24}
+                            onClick={() => setShowPin(false)}
+                            className="cursor-pointer"
+                        />
+                    ) : (
+                        <AiFillEye
+                            size={24}
+                            onClick={() => setShowPin(true)}
+                            className="cursor-pointer"
+                        />
+                    )}
+                </div>
+                <button
+                    onClick={handleSubmit}
+                    className="w-full mt-4 px-4 py-2 text-lg font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none"
+                >
+                    Submit
+                </button>
+                <Link
+                    to="/update-pin"
+                    className="block text-center mt-2 text-indigo-600 hover:text-[#FFA500]"
+                >
+                    <AiOutlineSetting size={24} className="inline-block mr-1" />
+                    Change PIN
+                </Link>
             </div>
+            <ToastContainer />
         </div>
     );
 };
 
-export default PinManagement;
+export default Opening;
