@@ -255,7 +255,7 @@ const Attendance = () => {
                         <div className="flex justify-between gap-6">
                             <button
                                 type="button"
-                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#FFA500] hover:border-2"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#FFA500] hover:border-2 hover:bg-slate-200"
                                 onClick={addPeriod}
                             >
                                 <FontAwesomeIcon icon={faHandHoldingWater} className="mr-2 text-[#FFA500] text-2xl" /> Add Period
@@ -263,7 +263,7 @@ const Attendance = () => {
 
                             <button
                                 type="submit"
-                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#4F46E5] hover:border-2"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#4F46E5] hover:border-2 hover:bg-slate-200"
                             >
                                 <FontAwesomeIcon icon={faEnvelopeCircleCheck} className="mr-2 text-[#4F46E5] text-2xl" />
                                 Submit
@@ -271,7 +271,7 @@ const Attendance = () => {
 
                             <button
                                 type="button"
-                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center  over:border-[#ff7a6e] hover:border-2"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center  over:border-[#ff7a6e] hover:border-2 hover:bg-slate-200"
                                 onClick={handleLogout}
                             >
                                 <FontAwesomeIcon icon={faSignOut} className="mr-2 text-[#ff7a6e] text-2xl" /> Logout
