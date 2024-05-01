@@ -261,7 +261,7 @@ const LevelAndSection = () => {
                             )}
 
                             {isEditing && editIndex === index && (
-                                <div className="mt-4 bg-gray-100 p-4 rounded-lg">
+                                <div className="mt-4 bg-gray-100 p-4 rounded-lg border-2 border-dashed">
                                     <h4 className="text-lg font-semibold mb-3">Edit Level and Add New Sections</h4>
                                     <input
                                         type="text"
@@ -270,6 +270,7 @@ const LevelAndSection = () => {
                                         onChange={(e) => setEditedLevel(e.target.value)}
                                         className="w-full p-2 border rounded-md"
                                     />
+                                    <div className='p-2'></div>
                                     <input
                                         type="text"
                                         placeholder="Add Additional Sections (comma-separated)"
@@ -277,6 +278,8 @@ const LevelAndSection = () => {
                                         onChange={(e) => setAdditionalSections(e.target.value)}
                                         className="w-full p-2 border rounded-md"
                                     />
+                                    <div className='p-2'></div>
+
                                     <button
                                         onClick={handleAddAdditionalSections}
                                         className="bg-blue-500 text-white px-4 py-2 rounded-md"

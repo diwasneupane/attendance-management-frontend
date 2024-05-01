@@ -156,7 +156,7 @@ const Sidebar = () => {
       <motion.div className="border-t border-gray-300 my-4"></motion.div>
 
       <Link
-        to="/logout"
+        to="/login"
         className="mt-auto p-3 relative flex items-center cursor-pointer"
         style={{
           borderRightWidth: "3px",
