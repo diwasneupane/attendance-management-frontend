@@ -3,10 +3,12 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faSignOut } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faSignOut, faAdd, faBookDead, faHandHoldingWater, faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
+import { useNavigate } from 'react-router-dom';
 
 const baseURL = 'http://localhost:3000/api/v1';
-
 
 const convertTimeStringToDate = (dateString, timeString) => {
     const [hours, minutes] = timeString.split(':');
@@ -15,6 +17,7 @@ const convertTimeStringToDate = (dateString, timeString) => {
     date.setMinutes(parseInt(minutes, 10));
     return date;
 };
+
 const Attendance = () => {
     const [formValues, setFormValues] = useState({
         date: '',
@@ -30,6 +33,7 @@ const Attendance = () => {
 
     const [levels, setLevels] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchLevels = async () => {
@@ -118,17 +122,37 @@ const Attendance = () => {
         }
     };
 
+    const handleLogout = () => {
+        confirmAlert({
+            title: 'Confirm Logout',
+            message: 'Are you sure you want to logout?',
+            buttons: [
+                {
+                    label: 'Yes',
+                    onClick: () => {
+                        localStorage.removeItem('validPin'); // Remove PIN from local storage
+                        navigate('/'); // Redirect to the login page or home
+                    },
+                },
+                {
+                    label: 'No',
+                },
+            ],
+        });
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-100 p-8 pt-4">
             <ToastContainer />
             <div className="w-full max-w-full mx-auto">
-                <div className="bg-white p-8 shadow-xl border-[#4F46E5] border-2 border-dashed rounded-2xl">
+                <div className="bg-white p-8 shadow-xl border-2 border-dashed rounded-2xl border-[#4F46E5] ">
                     <div className="flex items-center justify-between mb-8">
                         <img src="/src/assets/logo.png" alt="Header" className="w-40 rounded-lg shadow-lg border-2 border-[#4F46E5]" />
-                        <h2 className="text-2xl font-semibold text-[#4F46E5]">Period Attendance</h2>
+                        <h2 className="text-2xl font-semibold text-[#4F46E5] ml-6 p-2 pt-3 pb-3 rounded-lg shadow-lg border-2 border-[#4F46E5]">Elite Attendance Management</h2>
                     </div>
+
                     <form onSubmit={handleSubmit}>
-                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-2 rounded-2xl p-2 border-dashed">
+                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-6  border-2 border-dashed rounded-2xl shadow-sm  justify-between items-center p-4">
                             <div>
                                 <label className="block text-gray-700">Date:</label>
                                 <input
@@ -162,16 +186,15 @@ const Attendance = () => {
                                 <select
                                     name="section"
                                     value={formValues.section}
-                                    onChange={handleChange}
+                                    onChange={(e) => handleChange(e)}
                                     className="w-full px-4 py-3 rounded-lg bg-gray-200 border border-gray-300 focus:outline-none"
                                 >
                                     <option value="">Select Section</option>
-                                    {levels
-                                        .find((lvl) => lvl._id === formValues.level)?.sections.map((section) => (
-                                            <option key={section._id} value={section._id}>
-                                                {section.sectionName}
-                                            </option>
-                                        ))}
+                                    {levels.find((lvl) => lvl._id === formValues.level)?.sections.map((section) => (
+                                        <option key={section._id} value={section._id}>
+                                            {section.sectionName}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -209,7 +232,7 @@ const Attendance = () => {
                                         />
                                     </div>
 
-                                    <div class="w-1/3">
+                                    <div className="w-1/3">
                                         <label className="block text-gray-700">Time Out:</label>
                                         <input
                                             type="time"
@@ -220,7 +243,7 @@ const Attendance = () => {
                                     </div>
 
                                     <button
-                                        className="text-red-500 hover:text-red-700"
+                                        className="text-red-500 hover:text-red-700 pl-4 pt-4"
                                         onClick={() => deletePeriod(index)}
                                     >
                                         <FontAwesomeIcon icon={faTrash} />
@@ -232,24 +255,26 @@ const Attendance = () => {
                         <div className="flex justify-between gap-6">
                             <button
                                 type="button"
-                                className="w-full py-3 px-6 text-white bg-[#FFA500] rounded-lg hover:bg-indigo-700"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#FFA500] hover:border-2"
                                 onClick={addPeriod}
                             >
-                                <FontAwesomeIcon icon={faPlus} className="mr-2" /> Add Period
+                                <FontAwesomeIcon icon={faHandHoldingWater} className="mr-2 text-[#FFA500] text-2xl" /> Add Period
                             </button>
 
                             <button
                                 type="submit"
-                                className="w-full py-3 px-6 bg-[#4F46E5] text-white font-semibold rounded-lg hover:bg-indigo-700"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#4F46E5] hover:border-2"
                             >
+                                <FontAwesomeIcon icon={faEnvelopeCircleCheck} className="mr-2 text-[#4F46E5] text-2xl" />
                                 Submit
                             </button>
 
                             <button
                                 type="button"
-                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center hover:border-[#ff7a6e] hover:border-2"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center  over:border-[#ff7a6e] hover:border-2"
+                                onClick={handleLogout}
                             >
-                                <FontAwesomeIcon icon={faSignOut} className="mr-2" /> Logout
+                                <FontAwesomeIcon icon={faSignOut} className="mr-2 text-[#ff7a6e] text-2xl" /> Logout
                             </button>
                         </div>
                     </form>
