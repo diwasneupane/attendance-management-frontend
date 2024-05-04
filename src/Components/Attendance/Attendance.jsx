@@ -89,6 +89,10 @@ const Attendance = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!confirm("Please recheck the form before submitting")) {
+            return
+        }
+
         if (!formValues.date || !formValues.level || !formValues.section) {
             toast.error('Please fill in Date, Level, and Section!', {
                 autoClose: 3000,
@@ -113,6 +117,19 @@ const Attendance = () => {
 
             if (response.status === 200) {
                 toast.success('Attendance record created successfully!');
+                setFormValues({
+                    date: '',
+                    level: '',
+                    section: '',
+                })
+                setPeriods(Array.from({ length: 2 }, () => ({
+                    faculty: '',
+                    timeIn: '',
+                    timeOut: '',
+                })))
+
+
+
             } else {
                 throw new Error('Submission failed');
             }
