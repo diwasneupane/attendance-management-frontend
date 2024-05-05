@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGraduationCap, faChalkboardTeacher, faUser } from '@fortawesome/free-solid-svg-icons';
+import { TailSpin } from 'react-loader-spinner'; // Corrected import
 
 const Dashboard = () => {
     const [stats, setStats] = useState(null);
@@ -24,7 +25,11 @@ const Dashboard = () => {
     }, []);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <TailSpin color="#0141cf" height={50} width={50} /> {/* Using TailSpin component */}
+            </div>
+        );
     }
 
     if (error) {
