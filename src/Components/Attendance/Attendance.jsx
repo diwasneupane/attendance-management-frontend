@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faSignOut, faAdd, faBookDead, faHandHoldingWater, faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faSignOut, faAdd, faBookDead, faHandHoldingWater, faEnvelopeCircleCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,8 @@ const Attendance = () => {
 
     const [levels, setLevels] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const [attendanceReport, setAttendanceReport] = useState([]);
+    const [showAttendanceTable, setShowAttendanceTable] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -127,9 +129,6 @@ const Attendance = () => {
                     timeIn: '',
                     timeOut: '',
                 })))
-
-
-
             } else {
                 throw new Error('Submission failed');
             }
@@ -156,6 +155,23 @@ const Attendance = () => {
                 },
             ],
         });
+    };
+
+    const toggleAttendanceTable = async () => {
+        setShowAttendanceTable((prev) => !prev);
+        if (!showAttendanceTable) {
+            const currentDate = new Date().toISOString();
+            const startTime = new Date(currentDate).setHours(0, 0, 0, 0);
+            const endTime = new Date(currentDate).setHours(23, 59, 59, 999);
+            const checkInTimeRange = `${new Date(startTime).toISOString()}_${new Date(endTime).toISOString()}`;
+            try {
+                const response = await axios.get(`${baseURL}/attendance/get-attendance?page=1&limit=5&checkInTimeRange=${checkInTimeRange}`);
+                console.log(response)
+                setAttendanceReport(response.data.data || []);
+            } catch (error) {
+                console.error('Error fetching attendance data:', error);
+            }
+        }
     };
 
     return (
@@ -293,10 +309,50 @@ const Attendance = () => {
                             >
                                 <FontAwesomeIcon icon={faSignOut} className="mr-2 text-[#ff7a6e] text-2xl" /> Logout
                             </button>
+                            <button
+                                type="button"
+                                className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center  over:border-[#ff7a6e] hover:border-2 hover:bg-slate-200"
+                                onClick={toggleAttendanceTable}
+                            >
+                                <FontAwesomeIcon icon={showAttendanceTable ? faTimes : faBookDead} className="mr-2 text-[#ff7a6e] text-2xl" /> Show Attendance
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
+            {showAttendanceTable && (
+                <div className="fixed inset-0 bg-slate-600 bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-8 rounded-lg shadow-lg">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold text-gray-800">Attendance Report - {new Date().toDateString()}</h2>
+                            <button
+                                className="text-gray-600 hover:text-[#ff7a6e] focus:outline-none"
+                                onClick={toggleAttendanceTable}
+                            >
+                                <FontAwesomeIcon icon={faTimes} className="text-4xl" />
+                            </button>
+                        </div>
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="py-2 px-4 border border-gray-300">Faculty</th>
+                                    <th className="py-2 px-4 border border-gray-300">Time In</th>
+                                    <th className="py-2 px-4 border border-gray-300">Time Out</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {attendanceReport.map((attendance, index) => (
+                                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                        <td className="py-2 px-4 border border-gray-300">{attendance.teacher}</td>
+                                        <td className="py-2 px-4 border border-gray-300">{attendance.checkInTime}</td>
+                                        <td className="py-2 px-4 border border-gray-300">{attendance.checkOutTime}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
