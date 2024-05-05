@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faDownload, faChevronLeft, faChevronRight, faTrash, faCalendarAlt } from "@fortawesome/free-solid-svg-icons";
-import { confirmAlert } from "react-confirm-alert";
-import "react-confirm-alert/src/react-confirm-alert.css";
-import { ToastContainer, toast } from "react-toastify";
+import { faDownload, faCalendarAlt, faChevronLeft, faChevronRight, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { DateRangePicker } from "react-date-range";
-import { addDays } from "date-fns";
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
@@ -19,85 +15,69 @@ const axiosInstance = axios.create({
 
 const AttendanceReport = () => {
     const [reportData, setReportData] = useState([]);
-    const [searchName, setSearchName] = useState("");
+    const [filteredData, setFilteredData] = useState([]);
+    const [searchTeacher, setSearchTeacher] = useState("");
     const [searchLevel, setSearchLevel] = useState("");
-    const [selectedStartDate, setSelectedStartDate] = useState(null);
     const [dateRange, setDateRange] = useState([
         {
             startDate: new Date(),
-            endDate: addDays(new Date(), 7),
+            endDate: new Date(),
             key: "selection",
         },
     ]);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
     useEffect(() => {
-        fetchDataWithPagination();
-    }, [currentPage, selectedStartDate, dateRange]);
+        fetchData();
+    }, [currentPage, dateRange]); // Call fetchData when component mounts or pagination or date range changes
 
-    const fetchDataWithPagination = async () => {
+    const fetchData = async () => {
         try {
-            const startDate = selectedStartDate ? selectedStartDate.toISOString() : null;
-            const endDate = dateRange[0].endDate.toISOString();
             const response = await axiosInstance.get("/attendance/get-attendance", {
                 params: {
-                    startTime: startDate,
-                    endTime: endDate,
                     page: currentPage,
-                    limit: itemsPerPage
-                },
+                    limit: itemsPerPage,
+                    checkInTimeRange: `${dateRange[0].startDate.toISOString()}_${dateRange[0].endDate.toISOString()}`
+                }
             });
             if (response.status === 200 && Array.isArray(response.data.data)) {
                 setReportData(response.data.data);
+                setFilteredData(response.data.data);
             } else {
                 throw new Error("Unexpected response format");
             }
         } catch (error) {
             console.error("Error fetching attendance data:", error);
-            toast.error("Error fetching attendance data.");
             setReportData([]);
+            setFilteredData([]);
         }
     };
+    useEffect(() => {
+        filterDataByDateRange(dateRange[0]);
+    }, [dateRange]); // Call filterDataByDateRange when date range changes
 
-    const handleDayClick = (day) => {
-        setSelectedStartDate(day);
-    };
-
-    const filteredData = reportData.filter((item) => {
-        const teacherName = item.teacher ? item.teacher.toLowerCase() : "";
-        const levelName = typeof item.level === "string" ? item.level.toLowerCase() : "";
-        return teacherName.includes(searchName.toLowerCase()) && levelName.includes(searchLevel.toLowerCase());
-    });
-
-    const handleDelete = (item) => {
-        confirmAlert({
-            title: "Confirm Deletion",
-            message: `Are you sure you want to delete the record for "${item.teacher}"?`,
-            buttons: [
-                {
-                    label: "Yes",
-                    onClick: async () => {
-                        try {
-                            await axiosInstance.delete(`/attendance/delete-attendance/${item._id}`);
-                            setReportData((prev) => prev.filter((data) => data._id !== item._id));
-                            toast.success("Record deleted successfully.");
-                        } catch (error) {
-                            toast.error("Error deleting attendance record.");
-                        }
-                    },
-                },
-                {
-                    label: "No",
-                },
-            ],
+    const filterDataByDateRange = (selectedDateRange) => {
+        const filtered = reportData.filter((item) => {
+            const checkInTime = new Date(item.checkInTime);
+            const startDate = new Date(selectedDateRange.startDate);
+            const endDate = new Date(selectedDateRange.endDate);
+            const checkInDate = new Date(checkInTime.getFullYear(), checkInTime.getMonth(), checkInTime.getDate());
+            return checkInDate >= startDate && checkInDate <= endDate;
         });
+        setFilteredData(filtered);
     };
 
     const handleDownload = async () => {
         try {
-            const response = await axiosInstance.get("/attendance/get-attendance-excel", {
+            let checkInTimeRange = "";
+            if (dateRange[0].startDate && dateRange[0].endDate) {
+                const startDate = new Date(dateRange[0].startDate.getTime() - dateRange[0].startDate.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+                const endDate = new Date(dateRange[0].endDate.getTime() - dateRange[0].endDate.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+                checkInTimeRange = `&checkInTimeRange=${startDate}_${endDate}`;
+            }
+
+            const response = await axiosInstance.get(`/attendance/get-attendance-excel?page=1&limit=10${checkInTimeRange}`, {
                 responseType: "blob",
             });
 
@@ -108,11 +88,30 @@ const AttendanceReport = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            toast.success("Download started.");
         } catch (error) {
-            toast.error("Error downloading attendance report.");
+            console.error("Error downloading attendance report:", error);
         }
+    };
+
+    const handleDateChange = (ranges) => {
+        const selectedDateRange = ranges.selection;
+        setDateRange([
+            {
+                startDate: selectedDateRange.startDate,
+                endDate: selectedDateRange.endDate,
+                key: "selection",
+            },
+        ]);
+        filterDataByDateRange(selectedDateRange);
+    };
+
+    const handleSearch = () => {
+        const filtered = reportData.filter((item) => {
+            const teacherMatch = item.teacher.toLowerCase().includes(searchTeacher.toLowerCase());
+            const levelMatch = item.level.toLowerCase().includes(searchLevel.toLowerCase());
+            return teacherMatch && levelMatch;
+        });
+        setFilteredData(filtered);
     };
 
     const paginate = (pageNumber) => {
@@ -123,8 +122,6 @@ const AttendanceReport = () => {
 
     return (
         <div className="p-4 py-6">
-            <ToastContainer autoClose={3000} position="top-center" />
-
             <div className="p-4 border-2 border-dotted border-gray-300 rounded-lg">
                 <h2 className="text-lg font-semibold mb-4">Attendance Report</h2>
 
@@ -132,13 +129,13 @@ const AttendanceReport = () => {
                     <div className="relative flex-1">
                         <input
                             type="text"
-                            placeholder="Search by Name"
-                            value={searchName}
-                            onChange={(e) => setSearchName(e.target.value)}
+                            placeholder="Search by Teacher"
+                            value={searchTeacher}
+                            onChange={(e) => setSearchTeacher(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border rounded-md"
                         />
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+                            <FontAwesomeIcon icon={faSearch} className="text-blue-500" />
                         </div>
                     </div>
 
@@ -151,7 +148,7 @@ const AttendanceReport = () => {
                             className="w-full pl-10 pr-4 py-2 border rounded-md"
                         />
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+                            <FontAwesomeIcon icon={faSearch} className="text-blue-500" />
                         </div>
                     </div>
 
@@ -172,7 +169,7 @@ const AttendanceReport = () => {
 
                 {isDatePickerOpen && (
                     <DateRangePicker
-                        onChange={(item) => setDateRange([item.selection])}
+                        onChange={handleDateChange}
                         showSelectionPreview={true}
                         moveRangeOnFirstSelection={false}
                         months={2}
@@ -183,18 +180,17 @@ const AttendanceReport = () => {
 
                 <div className="overflow-x-auto pt-4">
                     <table className="min-w-full divide-y divide-gray-200 text-center">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-blue-0141cf">
                             <tr>
-                                <th className="px-6 py-3">#</th>
+                                <th className="px-6 py-3">S.No</th>
                                 <th className="px-6 py-3">Teacher</th>
                                 <th className="px-6 py-3">Level</th>
                                 <th className="px-6 py-3">Section</th>
                                 <th className="px-6 py-3">Time-In Time</th>
                                 <th className="px-6 py-3">Time-Out Time</th>
-                                <th className="px-6 py-3">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-yellow-ffa500 divide-y divide-gray-200">
                             {filteredData.map((item, index) => (
                                 <tr key={item._id}>
                                     <td className="px-6 py-4">{index + 1}</td>
@@ -203,14 +199,6 @@ const AttendanceReport = () => {
                                     <td>{item.section}</td>
                                     <td>{item.checkInTime}</td>
                                     <td>{item.checkOutTime}</td>
-                                    <td>
-                                        <button
-                                            className="text-red-500"
-                                            onClick={() => handleDelete(item)}
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </button>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -221,7 +209,7 @@ const AttendanceReport = () => {
                     <button
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`px-4 py-2 bg-blue-500 text-white rounded-md`}
+                        className={`px-4 py-2 bg-blue-500 text-white rounded-md ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         <FontAwesomeIcon icon={faChevronLeft} />
                         Previous
@@ -229,7 +217,7 @@ const AttendanceReport = () => {
                     <button
                         onClick={() => paginate(currentPage + 1)}
                         disabled={filteredData.length < itemsPerPage}
-                        className={`px-4 py-2 bg-blue-500 text-white rounded-md`}
+                        className={`px-4 py-2 bg-blue-500 text-white rounded-md ${filteredData.length < itemsPerPage ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Next
                         <FontAwesomeIcon icon={faChevronRight} />

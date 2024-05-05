@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faSignOut, faAdd, faBookDead, faHandHoldingWater, faEnvelopeCircleCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faSignOut, faAdd, faBookDead, faHandHoldingWater, faEnvelopeCircleCheck, faTimes, faRecordVinyl, faReceipt } from '@fortawesome/free-solid-svg-icons';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useNavigate } from 'react-router-dom';
@@ -238,7 +238,10 @@ const Attendance = () => {
                                     key={index}
                                     className="p-4 bg-gray-100 border-2 border-dashed rounded-2xl shadow-sm flex justify-between items-center"
                                 >
-                                    <div className="w-1/3 pr-4">
+                                    <div className="w-1/10 pr-4 border-r border-slate-900 py-4">
+                                        <label className="block text-gray-700">Period {index + 1}</label>
+                                    </div>
+                                    <div className="w-1/4 pr-4">
                                         <label className="block text-gray-700">Faculty:</label>
                                         <select
                                             name="faculty"
@@ -255,7 +258,7 @@ const Attendance = () => {
                                         </select>
                                     </div>
 
-                                    <div className="w-1/3 pr-4">
+                                    <div className="w-1/4 pr-4">
                                         <label className="block text-gray-700">Time In:</label>
                                         <input
                                             type="time"
@@ -265,7 +268,7 @@ const Attendance = () => {
                                         />
                                     </div>
 
-                                    <div className="w-1/3">
+                                    <div className="w-1/4">
                                         <label className="block text-gray-700">Time Out:</label>
                                         <input
                                             type="time"
@@ -283,6 +286,7 @@ const Attendance = () => {
                                     </button>
                                 </div>
                             ))}
+
                         </div>
 
                         <div className="flex justify-between gap-6">
@@ -314,7 +318,7 @@ const Attendance = () => {
                                 className="w-full py-3 px-6 bg-slate-100 text-black font-semibold rounded-lg border-2 border-dashed border-black flex items-center justify-center  over:border-[#ff7a6e] hover:border-2 hover:bg-slate-200"
                                 onClick={toggleAttendanceTable}
                             >
-                                <FontAwesomeIcon icon={showAttendanceTable ? faTimes : faBookDead} className="mr-2 text-[#ff7a6e] text-2xl" /> Show Attendance
+                                <FontAwesomeIcon icon={showAttendanceTable ? faTimes : faReceipt} className="mr-2 text-[#ff7a6e] text-2xl" /> Show Attendance
                             </button>
                         </div>
                     </form>
