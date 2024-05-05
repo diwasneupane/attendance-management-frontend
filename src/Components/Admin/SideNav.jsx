@@ -86,6 +86,7 @@ const Sidebar = () => {
     },
   };
   const navigate = useNavigate();
+
   const handleLogout = async () => {
     confirmAlert({
       title: 'Confirm Logout',
@@ -113,8 +114,13 @@ const Sidebar = () => {
               navigate("/login"); // Redirect to login
               window.location.reload()
             } catch (error) {
-              console.error("Error during logout:", error);
-              toast.error("Failed to log out. Please try again."); // Error message
+              if (error.response && error.response.status === 401) {
+                // Token expired, log user out
+                logout();
+              } else {
+                console.error("Error during logout:", error);
+                toast.error("Failed to log out. Please try again."); // Error message
+              }
             }
           },
         },
@@ -127,8 +133,12 @@ const Sidebar = () => {
       ],
     });
   };
-
-
+  const logout = () => {
+    // Define your logout logic here
+    localStorage.removeItem("authToken");
+    navigate("/login");
+    window.location.reload();
+  };
   return (
     <motion.div
       initial={collapsed ? "collapsed" : "expanded"}
@@ -203,7 +213,6 @@ const Sidebar = () => {
       <motion.div className="border-t border-gray-300 my-4"></motion.div>
 
       <Link
-
         className="mt-auto p-3 relative flex items-center cursor-pointer"
         style={{
           borderRightWidth: "3px",

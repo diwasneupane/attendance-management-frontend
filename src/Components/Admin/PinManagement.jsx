@@ -11,6 +11,7 @@ import {
     faTrash,
     faSave,
 } from "@fortawesome/free-solid-svg-icons";
+import { TailSpin } from 'react-loader-spinner'; // Import TailSpin loader
 
 // Custom styling to hide number input arrows in different browsers
 const numberInputStyle = {
@@ -43,14 +44,18 @@ const PinManagement = () => {
     const [editingIndex, setEditingIndex] = useState(null);
     const [editedPin, setEditedPin] = useState("");
     const [validationError, setValidationError] = useState("");
+    const [loading, setLoading] = useState(false); // Add loading state
 
     useEffect(() => {
         const fetchPins = async () => {
             try {
+                setLoading(true); // Set loading state when fetching pins
                 const response = await axiosInstance.get("/pin/view");
                 setPins(response.data.data || []);
             } catch (error) {
                 toast.error("Error fetching PINs.");
+            } finally {
+                setLoading(false); // Reset loading state after fetching pins
             }
         };
 
@@ -67,7 +72,7 @@ const PinManagement = () => {
         setNewPin(value);
     };
 
-    const handleAddPin = () => {
+    const handleAddPin = async () => {
         if (newPin.trim().length !== 4) {
             toast.error("PIN must be exactly 4 digits.");
             return;
@@ -81,6 +86,7 @@ const PinManagement = () => {
                     label: "Yes",
                     onClick: async () => {
                         try {
+                            setLoading(true); // Set loading state when adding pin
                             const response = await axiosInstance.post("/pin/add", {
                                 pin: newPin,
                             });
@@ -92,6 +98,8 @@ const PinManagement = () => {
                             toast.success("PIN added successfully.");
                         } catch (error) {
                             toast.error("Error adding PIN.");
+                        } finally {
+                            setLoading(false); // Reset loading state after adding pin
                         }
                     },
                 },
@@ -116,7 +124,7 @@ const PinManagement = () => {
         }
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (editedPin.trim().length !== 4) {
             toast.error("PIN must be exactly 4 digits.");
             return;
@@ -131,6 +139,7 @@ const PinManagement = () => {
                     onClick: async () => {
                         const pinId = pins[editingIndex]._id;
                         try {
+                            setLoading(true); // Set loading state when saving edit
                             await axiosInstance.put(`/pin/update/${pinId}`, {
                                 newPin: editedPin,
                             });
@@ -143,6 +152,8 @@ const PinManagement = () => {
                             toast.success("PIN updated successfully.");
                         } catch (error) {
                             toast.error("Error updating PIN.");
+                        } finally {
+                            setLoading(false); // Reset loading state after saving edit
                         }
                     },
                 },
@@ -153,7 +164,7 @@ const PinManagement = () => {
         });
     };
 
-    const handleDeletePin = (index) => {
+    const handleDeletePin = async (index) => {
         const pinId = pins[index]._id;
 
         confirmAlert({
@@ -164,11 +175,14 @@ const PinManagement = () => {
                     label: "Yes",
                     onClick: async () => {
                         try {
+                            setLoading(true); // Set loading state when deleting pin
                             await axiosInstance.delete(`/pin/delete/${pinId}`);
                             setPins((prev) => prev.filter((_, i) => i !== index));
                             toast.success("PIN deleted successfully.");
                         } catch (error) {
                             toast.error("Error deleting PIN.");
+                        } finally {
+                            setLoading(false); // Reset loading state after deleting pin
                         }
                     },
                 },
@@ -204,8 +218,12 @@ const PinManagement = () => {
                         onClick={handleAddPin}
                         className="mt-3 bg-indigo-500 text-white px-5 py-3 rounded-md hover:bg-indigo-600 transition-all duration-200 w-full"
                     >
-                        <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                        Add PIN
+                        {loading ? <TailSpin color="#fff" height={20} width={20} /> : (
+                            <>
+                                <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                                Add PIN
+                            </>
+                        )}
                     </button>
                 </div>
 

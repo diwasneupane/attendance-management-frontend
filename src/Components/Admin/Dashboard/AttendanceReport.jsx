@@ -12,6 +12,16 @@ const axiosInstance = axios.create({
         "Content-Type": "application/json",
     },
 });
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            config.headers.Authorization = `Bearer ${authToken}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
 const AttendanceReport = () => {
     const [reportData, setReportData] = useState([]);
@@ -28,59 +38,72 @@ const AttendanceReport = () => {
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
+    const [initialLoad, setInitialLoad] = useState(true);
 
     useEffect(() => {
         fetchData();
-    }, [searchTeacher, searchLevel]); // Call fetchData when search parameters change
+    }, []); // Fetch data initially when component mounts
+
+    useEffect(() => {
+        handleFiltering();
+    }, [dateRange, searchTeacher, searchLevel]); // Update filtered data when date range, teacher, or level changes
 
     const fetchData = async () => {
         try {
-            const response = await axiosInstance.get("/attendance/get-attendance", {
-                params: {
-                    page: currentPage,
-                    limit: itemsPerPage,
-                    teacher: searchTeacher,
-                    level: searchLevel
-                }
-            });
+            // Fetch attendance data from the server
+            const response = await axiosInstance.get("/attendance/get-attendance");
+
+            // Check if the response is successful and contains an array of data
             if (response.status === 200 && Array.isArray(response.data.data)) {
-                setReportData(response.data.data);
-                setFilteredData(response.data.data);
+                // Set both report data and filtered data with the fetched data
+                const fetchedData = response.data.data;
+                setReportData(fetchedData);
+                setFilteredData(fetchedData);
             } else {
+                // If the response format is unexpected, throw an error
                 throw new Error("Unexpected response format");
             }
         } catch (error) {
+            // Handle any errors that occur during the fetching process
             console.error("Error fetching attendance data:", error);
+            // Reset report data and filtered data to an empty array
             setReportData([]);
             setFilteredData([]);
         }
     };
-
     useEffect(() => {
         filterDataByDateRange(dateRange[0]);
-    }, [dateRange]); // Call filterDataByDateRange when date range changes
+    }, [dateRange]);
 
-    const filterDataByDateRange = (selectedDateRange) => {
-        const filtered = reportData.filter((item) => {
-            const checkInTime = new Date(item.checkInTime);
-            const startDate = new Date(selectedDateRange.startDate);
-            const endDate = new Date(selectedDateRange.endDate);
-            const checkInDate = new Date(checkInTime.getFullYear(), checkInTime.getMonth(), checkInTime.getDate());
-            return checkInDate >= startDate && checkInDate <= endDate;
-        });
-        setFilteredData(filtered);
-    };
 
-    const handleDownload = async () => {
+
+    const handleDownload = async (singleDayData = false) => {
         try {
-            let checkInTimeRange = "";
-            if (dateRange[0].startDate && dateRange[0].endDate) {
-                const startDate = new Date(dateRange[0].startDate.getTime() - dateRange[0].startDate.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-                const endDate = new Date(dateRange[0].endDate.getTime() - dateRange[0].endDate.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-                checkInTimeRange = `&checkInTimeRange=${startDate}_${endDate}`;
+            let url = "/attendance/get-attendance-excel";
+
+            // Get the selected date range
+            const selectedDateRange = dateRange[0];
+
+            // Construct the date range string
+            let dateRangeString = "";
+            if (selectedDateRange.startDate && selectedDateRange.endDate) {
+                const startDate = selectedDateRange.startDate.toISOString().split("T")[0];
+                const endDate = selectedDateRange.endDate.toISOString().split("T")[0];
+                dateRangeString = `${startDate}_${endDate}`;
+            } else if (singleDayData && selectedDateRange.startDate) {
+                const selectedDate = selectedDateRange.startDate.toISOString().split("T")[0];
+                dateRangeString = selectedDate;
             }
 
-            const response = await axiosInstance.get(`/attendance/get-attendance-excel?page=1&limit=10${checkInTimeRange}`, {
+            // Log the constructed date range string
+            console.log("Selected Date Range:", dateRangeString);
+
+            // Append date range to URL query parameters
+            if (dateRangeString) {
+                url += `?checkInTimeRange=${dateRangeString}`;
+            }
+
+            const response = await axiosInstance.get(url, {
                 responseType: "blob",
             });
 
@@ -96,42 +119,64 @@ const AttendanceReport = () => {
         }
     };
 
-    const handleDateChange = (ranges) => {
-        const selectedDateRange = ranges.selection;
-        setDateRange([
-            {
-                startDate: selectedDateRange.startDate,
-                endDate: selectedDateRange.endDate,
-                key: "selection",
-            },
-        ]);
-        filterDataByDateRange(selectedDateRange);
+    const handleFiltering = () => {
+        const filtered = reportData.filter(item => {
+            const checkInDate = new Date(item.checkInTime);
+            const withinDateRange = (
+                checkInDate >= dateRange[0].startDate &&
+                checkInDate <= dateRange[0].endDate
+            );
+            const matchesSearch = (
+                searchTeacher === "" || item.teacher.toLowerCase().includes(searchTeacher.toLowerCase())
+            ) && (
+                    searchLevel === "" || item.level.toLowerCase().includes(searchLevel.toLowerCase())
+                );
+            return withinDateRange && matchesSearch;
+        });
+        setFilteredData(filtered);
     };
 
-    const paginate = async (pageNumber) => {
-        try {
-            if (pageNumber > 0) {
-                setCurrentPage(pageNumber);
-                const response = await axiosInstance.get("/attendance/get-attendance", {
-                    params: {
-                        page: pageNumber, // Send the updated page number to the backend
-                        limit: itemsPerPage,
-                        teacher: searchTeacher,
-                        level: searchLevel
-                    }
-                });
-                if (response.status === 200 && Array.isArray(response.data.data)) {
-                    setReportData(response.data.data);
-                    setFilteredData(response.data.data);
-                } else {
-                    throw new Error("Unexpected response format");
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching attendance data:", error);
+    const filterDataByDateRange = (selectedDateRange) => {
+        const startDate = new Date(selectedDateRange.startDate);
+        const endDate = new Date(selectedDateRange.endDate);
+
+        const filtered = reportData.filter((item) => {
+            const checkInTime = new Date(item.checkInTime);
+            const checkInDate = new Date(checkInTime.getFullYear(), checkInTime.getMonth(), checkInTime.getDate());
+            return checkInDate >= startDate && checkInDate <= endDate;
+        });
+
+        setFilteredData(filtered);
+    };
+    const handleDateChange = (ranges) => {
+        const selectedDateRange = ranges.selection;
+
+        if (selectedDateRange.startDate && selectedDateRange.endDate) {
+            setDateRange([
+                {
+                    startDate: selectedDateRange.startDate,
+                    endDate: selectedDateRange.endDate,
+                    key: "selection",
+                },
+            ]);
+            filterDataByDateRange(selectedDateRange);
+        } else if (selectedDateRange.startDate) {
+
+            const selectedDate = selectedDateRange.startDate;
+            setDateRange([
+                {
+                    startDate: selectedDate,
+                    endDate: selectedDate,
+                    key: "selection",
+                },
+            ]);
+            filterDataByDateRange({ startDate: selectedDate, endDate: selectedDate });
         }
     };
 
+    const paginate = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
 
     const renderTableHeader = () => {
         return (
@@ -149,11 +194,15 @@ const AttendanceReport = () => {
     };
 
     const renderTableRows = () => {
+        // Calculate start and end index for current page
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+
         return (
             <tbody className="bg-[#ffffff] divide-y divide-gray-200">
-                {filteredData.map((item, index) => (
+                {filteredData.slice(startIndex, endIndex).map((item, index) => (
                     <tr key={item._id}>
-                        <td className="px-6 py-4">{index + 1}</td>
+                        <td className="px-6 py-4">{startIndex + index + 1}</td>
                         <td>{item.teacher}</td>
                         <td>{item.level}</td>
                         <td>{item.section}</td>

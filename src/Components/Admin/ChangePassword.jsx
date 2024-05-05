@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getAuthToken } from "../../Auth"; // Function to get auth token from local storage
+import { TailSpin } from 'react-loader-spinner'; // Import TailSpin loader
 
 const ChangePassword = () => {
     const [currentPassword, setCurrentPassword] = useState("");
@@ -13,6 +14,7 @@ const ChangePassword = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false); // Add loading state
 
     const togglePasswordVisibility = (field) => {
         if (field === "current") {
@@ -23,24 +25,34 @@ const ChangePassword = () => {
             setShowConfirmPassword(!showConfirmPassword);
         }
     };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true); // Set loading state to true when submitting the form
 
         if (!currentPassword || !newPassword || !confirmPassword) {
             toast.error("All fields are required.");
+            setLoading(false); // Reset loading state
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            toast.error("New password cannot be the same as the old password.");
+            setLoading(false); // Reset loading state
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            toast.error("New passwords do not match."); // Error check for password mismatch
+            toast.error("New passwords do not match.");
+            setLoading(false); // Reset loading state
             return;
         }
 
         try {
-            const authToken = getAuthToken(); // Retrieve the token from local storage
+            const authToken = getAuthToken();
 
             await axios.patch(
-                "http://localhost:3000/api/v1/admin/admin-updatePassword", // Endpoint for password update
+                "http://localhost:3000/api/v1/admin/admin-updatePassword",
                 {
                     oldPassword: currentPassword,
                     newPassword: newPassword,
@@ -48,7 +60,7 @@ const ChangePassword = () => {
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${authToken}`, // Add the token to the headers
+                        Authorization: `Bearer ${authToken}`,
                     },
                 }
             );
@@ -63,6 +75,8 @@ const ChangePassword = () => {
             } else {
                 toast.error("Error changing password.");
             }
+        } finally {
+            setLoading(false); // Reset loading state regardless of success or failure
         }
     };
 
@@ -86,7 +100,7 @@ const ChangePassword = () => {
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                 required
-                                className="w-full p-3 border-2 border-black  rounded-lg"
+                                className="w-full p-3 border-2 border-black rounded-lg"
                             />
                             <button
                                 type="button"
@@ -111,7 +125,7 @@ const ChangePassword = () => {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
-                                className="w-full p-3 border-2 border-black  rounded-lg"
+                                className="w-full p-3 border-2 border-black rounded-lg"
                             />
                             <button
                                 type="button"
@@ -136,7 +150,7 @@ const ChangePassword = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                className="w-full p-3 border-2 border-black  rounded-lg"
+                                className="w-full p-3 border-2 border-black rounded-lg"
                             />
                             <button
                                 type="button"
@@ -153,8 +167,9 @@ const ChangePassword = () => {
                     <button
                         type="submit"
                         className="bg-[#0141CF] text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition ease-in-out"
+                        disabled={loading} // Disable button when loading is true
                     >
-                        Change Password
+                        {loading ? <TailSpin color="#fff" height={20} width={20} /> : "Change Password"}
                     </button>
                 </form>
             </div>

@@ -6,6 +6,7 @@ import { faTrash, faPlus, faEdit, faSave } from '@fortawesome/free-solid-svg-ico
 import axios from 'axios';
 import mongoose from 'mongoose';
 import { confirmAlert } from 'react-confirm-alert';
+import { TailSpin } from 'react-loader-spinner';
 
 const axiosInstance = axios.create({
     baseURL: 'http://localhost:3000/api/v1',
@@ -34,8 +35,10 @@ const LevelAndSection = () => {
     const [editedLevel, setEditedLevel] = useState('');
     const [editedSections, setEditedSections] = useState('');
     const [additionalSections, setAdditionalSections] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const fetchLevels = async () => {
+        setLoading(true);
         try {
             const response = await axiosInstance.get('/level/get-level');
             const levelsData = response.data.data;
@@ -45,6 +48,8 @@ const LevelAndSection = () => {
             }
         } catch (error) {
             toast.error('Failed to fetch levels.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -54,23 +59,32 @@ const LevelAndSection = () => {
 
     const handleAddLevel = async () => {
         if (newLevel.trim() === '' || newSections.trim() === '') {
-            toast.error('Level name and sections are required.');
-            return;
+            return toast.error('Please enter level name and sections.');
         }
 
+        setLoading(true);
         try {
-            const sectionsArray = newSections.split(',').map((section) => section.trim());
+            const sectionsArray = newSections.split(',').map((section) => section.trim().toUpperCase());
+            const existingLevel = levels.find((level) => level.level.toUpperCase() === newLevel.trim().toUpperCase());
+
+            if (existingLevel) {
+                return toast.error('Level already exists.');
+            }
+
             await axiosInstance.post('/level/create-level', {
-                level: newLevel,
+                level: newLevel.trim().toUpperCase(),
                 sections: sectionsArray,
             });
 
             fetchLevels();
             setNewLevel('');
             setNewSections('');
-            toast.success('Level and sections added successfully.');
+            toast.success('Level added successfully.');
         } catch (error) {
-            toast.error('Error adding level.');
+            console.error('Error adding level:', error);
+            toast.error('Failed to add level. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -93,12 +107,19 @@ const LevelAndSection = () => {
             return;
         }
 
+        const isLevelNameConflict = levels.some((lvl, idx) => idx !== editIndex && lvl.level.toUpperCase() === editedLevel.trim().toUpperCase());
+        if (isLevelNameConflict) {
+            toast.error('Level name already exists.');
+            return;
+        }
+
+        setLoading(true);
         try {
-            const sectionsArray = editedSections.split(',').map((section) => section.trim());
+            const sectionsArray = editedSections.split(',').map((section) => section.trim().toUpperCase());
             const levelId = levels[editIndex]?._id;
 
             await axiosInstance.patch(`/level/update-level/${levelId}`, {
-                level: editedLevel,
+                level: editedLevel.trim().toUpperCase(),
                 sections: sectionsArray,
             });
 
@@ -108,6 +129,8 @@ const LevelAndSection = () => {
             toast.success('Level updated successfully.');
         } catch (error) {
             toast.error('Error updating level.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -115,12 +138,19 @@ const LevelAndSection = () => {
         const levelId = levels[editIndex]?._id;
 
         if (additionalSections.trim() === '') {
-            toast.error('Please enter additional sections.');
-            return;
+            return toast.error('Please enter additional sections.');
         }
 
+        setLoading(true);
         try {
-            const sectionsArray = additionalSections.split(',').map((section) => section.trim());
+            const sectionsArray = additionalSections.split(',').map((section) => section.trim().toUpperCase());
+            const existingSections = levels[editIndex]?.sections.map((section) => section.sectionName.toUpperCase());
+
+            const duplicateSections = sectionsArray.filter((section) => existingSections.includes(section));
+            if (duplicateSections.length > 0) {
+                return toast.error(`Sections already exist in this level: ${duplicateSections.join(', ')}`);
+            }
+
             await axiosInstance.post('/level/add-section', {
                 levelId,
                 additionalSections: sectionsArray,
@@ -130,7 +160,10 @@ const LevelAndSection = () => {
             setAdditionalSections('');
             toast.success('Additional sections added successfully.');
         } catch (error) {
-            toast.error('Error adding additional sections.');
+            console.error('Error adding additional sections:', error);
+            toast.error('Failed to add additional sections. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -142,6 +175,7 @@ const LevelAndSection = () => {
             return;
         }
 
+        setLoading(true);
         confirmAlert({
             title: 'Confirm Deletion',
             message: 'Are you sure you want to delete this level?',
@@ -156,13 +190,15 @@ const LevelAndSection = () => {
                         } catch (error) {
                             console.error('Error deleting level:', error);
                             toast.error('Error deleting level.');
+                        } finally {
+                            setLoading(false);
                         }
                     },
                 },
                 {
                     label: 'No',
                     onClick: () => {
-
+                        setLoading(false);
                     },
                 },
             ],
@@ -177,12 +213,15 @@ const LevelAndSection = () => {
             return;
         }
 
+        setLoading(true);
         try {
             await axiosInstance.delete(`/level/delete-section/${sectionId}`);
             fetchLevels();
             toast.success('Section deleted successfully.');
         } catch (error) {
             toast.error('Error deleting section.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -221,91 +260,99 @@ const LevelAndSection = () => {
                     Add Level and Sections
                 </button>
 
-                {Array.isArray(levels) && levels.length > 0 ? (
-                    levels.map((level, index) => (
-                        <div key={index} className="mb-6 bg-white rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-semibold">{level.level}</h3>
-                                <div className="flex">
-                                    <button
-                                        onClick={() => handleEditLevel(index)}
-                                        className="text-blue-500 hover:text-blue-700"
-                                    >
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteLevel(index)}
-                                        className="text-red-500 hover:text-red-700 ml-2"
-                                    >
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {Array.isArray(level.sections) && level.sections.length > 0 ? (
-                                <div className="grid grid-cols-3 gap-4 mt-4">
-                                    {level.sections.map((section, sectionIndex) => (
-                                        <div key={sectionIndex} className="bg-gray-200 p-3 rounded-md flex justify-between items-center">
-                                            <p>{section.sectionName}</p>
-                                            <button
-                                                onClick={() => handleDeleteSection(index, sectionIndex)}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <FontAwesomeIcon icon={faTrash} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p>No sections found.</p>
-                            )}
-
-                            {isEditing && editIndex === index && (
-                                <div className="mt-4 bg-gray-100 p-4 rounded-lg border-2 border-dashed">
-                                    <h4 className="text-lg font-semibold mb-3">Edit Level and Add New Sections</h4>
-                                    <input
-                                        type="text"
-                                        placeholder="Edit Level Name"
-                                        value={editedLevel}
-                                        onChange={(e) => setEditedLevel(e.target.value)}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                    <div className='p-2'></div>
-                                    <input
-                                        type="text"
-                                        placeholder="Add Additional Sections (comma-separated)"
-                                        value={additionalSections}
-                                        onChange={(e) => setAdditionalSections(e.target.value)}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                    <div className='p-2'></div>
-
-                                    <button
-                                        onClick={handleAddAdditionalSections}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-md"
-                                    >
-                                        <FontAwesomeIcon icon={faPlus} />
-                                        Add Sections
-                                    </button>
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className="bg-green-500 text-white px-4 py-2 rounded-md ml-2"
-                                    >
-                                        <FontAwesomeIcon icon={faSave} />
-                                        Save Changes
-                                    </button>
-                                    <button
-                                        onClick={() => setIsEditing(false)}
-                                        className="bg-gray-500 text-white px-4 py-2 rounded-md ml-2"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            )}
+                {loading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <TailSpin color="#0141cf" height={50} width={50} />
                         </div>
-                    ))
+                    </div>
                 ) : (
-                    <p>No levels found.</p>
+                    Array.isArray(levels) && levels.length > 0 ? (
+                        levels.map((level, index) => (
+                            <div key={index} className="mb-6 bg-white rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold">{level.level}</h3>
+                                    <div className="flex">
+                                        <button
+                                            onClick={() => handleEditLevel(index)}
+                                            className="text-blue-500 hover:text-blue-700"
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteLevel(index)}
+                                            className="text-red-500 hover:text-red-700 ml-2"
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {Array.isArray(level.sections) && level.sections.length > 0 ? (
+                                    <div className="grid grid-cols-3 gap-4 mt-4">
+                                        {level.sections.map((section, sectionIndex) => (
+                                            <div key={sectionIndex} className="bg-gray-200 p-3 rounded-md flex justify-between items-center">
+                                                <p>{section.sectionName}</p>
+                                                <button
+                                                    onClick={() => handleDeleteSection(index, sectionIndex)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p>No sections found.</p>
+                                )}
+
+                                {isEditing && editIndex === index && (
+                                    <div className="mt-4 bg-gray-100 p-4 rounded-lg border-2 border-dashed">
+                                        <h4 className="text-lg font-semibold mb-3">Edit Level and Add New Sections</h4>
+                                        <input
+                                            type="text"
+                                            placeholder="Edit Level Name"
+                                            value={editedLevel}
+                                            onChange={(e) => setEditedLevel(e.target.value)}
+                                            className="w-full p-2 border rounded-md"
+                                        />
+                                        <div className='p-2'></div>
+                                        <input
+                                            type="text"
+                                            placeholder="Add Additional Sections (comma-separated)"
+                                            value={additionalSections}
+                                            onChange={(e) => setAdditionalSections(e.target.value)}
+                                            className="w-full p-2 border rounded-md"
+                                        />
+                                        <div className='p-2'></div>
+
+                                        <button
+                                            onClick={handleAddAdditionalSections}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                                        >
+                                            <FontAwesomeIcon icon={faPlus} />
+                                            Add Sections
+                                        </button>
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            className="bg-green-500 text-white px-4 py-2 rounded-md ml-2"
+                                        >
+                                            <FontAwesomeIcon icon={faSave} />
+                                            Save Changes
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditing(false)}
+                                            className="bg-gray-500 text-white px-4 py-2 rounded-md ml-2"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <p>No levels found.</p>
+                    )
                 )}
             </div>
         </div>

@@ -91,52 +91,73 @@ const Attendance = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!confirm("Please recheck the form before submitting")) {
-            return
-        }
-
         if (!formValues.date || !formValues.level || !formValues.section) {
-            toast.error('Please fill in Date, Level, and Section!', {
+            toast.error('Please fill in Date, Level, Section, and Faculty for all periods!', {
                 autoClose: 3000,
                 progressBar: true,
             });
             return;
         }
 
-        const attendanceData = {
-            date: formValues.date,
-            levelId: formValues.level,
-            sectionId: formValues.section,
-            periods: periods.map((period) => ({
-                teacher: period.faculty,
-                checkInTime: convertTimeStringToDate(formValues.date, period.timeIn),
-                checkOutTime: convertTimeStringToDate(formValues.date, period.timeOut),
-            })),
-        };
-
-        try {
-            const response = await axios.post(`${baseURL}/attendance/create-attendance`, attendanceData);
-
-            if (response.status === 200) {
-                toast.success('Attendance record created successfully!');
-                setFormValues({
-                    date: '',
-                    level: '',
-                    section: '',
-                })
-                setPeriods(Array.from({ length: 2 }, () => ({
-                    faculty: '',
-                    timeIn: '',
-                    timeOut: '',
-                })))
-            } else {
-                throw new Error('Submission failed');
-            }
-        } catch (error) {
-            toast.error('Error creating attendance record. Please try again.');
-            console.error(error);
+        if (periods.some(period => !period.faculty)) {
+            toast.error('Please select Faculty for all periods!', {
+                autoClose: 3000,
+                progressBar: true,
+            });
+            return;
         }
+
+        // Show confirmation dialog after verifying all fields
+        confirmAlert({
+            title: 'Confirm Submission',
+            message: 'Are you sure you want to submit the form?',
+            buttons: [
+                {
+                    label: 'Yes',
+                    onClick: async () => {
+                        const attendanceData = {
+                            date: formValues.date,
+                            levelId: formValues.level,
+                            sectionId: formValues.section,
+                            periods: periods.map((period) => ({
+                                teacher: period.faculty,
+                                checkInTime: convertTimeStringToDate(formValues.date, period.timeIn),
+                                checkOutTime: convertTimeStringToDate(formValues.date, period.timeOut),
+                            })),
+                        };
+
+                        try {
+                            const response = await axios.post(`${baseURL}/attendance/create-attendance`, attendanceData);
+
+                            if (response.status === 200) {
+                                toast.success('Attendance record created successfully!');
+                                setFormValues({
+                                    date: '',
+                                    level: '',
+                                    section: '',
+                                })
+                                setPeriods(Array.from({ length: 2 }, () => ({
+                                    faculty: '',
+                                    timeIn: '',
+                                    timeOut: '',
+                                })))
+                            } else {
+                                throw new Error('Submission failed');
+                            }
+                        } catch (error) {
+                            toast.error('Error creating attendance record. Please try again.');
+                            console.error(error);
+                        }
+                    }
+                },
+                {
+                    label: 'No',
+                    onClick: () => { }
+                }
+            ]
+        });
     };
+
 
     const handleLogout = () => {
         confirmAlert({
@@ -279,6 +300,7 @@ const Attendance = () => {
                                     </div>
 
                                     <button
+                                        type="button"
                                         className="text-red-500 hover:text-red-700 pl-4 pt-4"
                                         onClick={() => deletePeriod(index)}
                                     >
