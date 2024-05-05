@@ -28,9 +28,10 @@ const AttendanceReport = () => {
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
+
     useEffect(() => {
         fetchData();
-    }, [currentPage, dateRange]); // Call fetchData when component mounts or pagination or date range changes
+    }, [searchTeacher, searchLevel]); // Call fetchData when search parameters change
 
     const fetchData = async () => {
         try {
@@ -38,7 +39,8 @@ const AttendanceReport = () => {
                 params: {
                     page: currentPage,
                     limit: itemsPerPage,
-                    checkInTimeRange: `${dateRange[0].startDate.toISOString()}_${dateRange[0].endDate.toISOString()}`
+                    teacher: searchTeacher,
+                    level: searchLevel
                 }
             });
             if (response.status === 200 && Array.isArray(response.data.data)) {
@@ -53,6 +55,7 @@ const AttendanceReport = () => {
             setFilteredData([]);
         }
     };
+
     useEffect(() => {
         filterDataByDateRange(dateRange[0]);
     }, [dateRange]); // Call filterDataByDateRange when date range changes
@@ -105,19 +108,61 @@ const AttendanceReport = () => {
         filterDataByDateRange(selectedDateRange);
     };
 
-    const handleSearch = () => {
-        const filtered = reportData.filter((item) => {
-            const teacherMatch = item.teacher.toLowerCase().includes(searchTeacher.toLowerCase());
-            const levelMatch = item.level.toLowerCase().includes(searchLevel.toLowerCase());
-            return teacherMatch && levelMatch;
-        });
-        setFilteredData(filtered);
+    const paginate = async (pageNumber) => {
+        try {
+            if (pageNumber > 0) {
+                setCurrentPage(pageNumber);
+                const response = await axiosInstance.get("/attendance/get-attendance", {
+                    params: {
+                        page: pageNumber, // Send the updated page number to the backend
+                        limit: itemsPerPage,
+                        teacher: searchTeacher,
+                        level: searchLevel
+                    }
+                });
+                if (response.status === 200 && Array.isArray(response.data.data)) {
+                    setReportData(response.data.data);
+                    setFilteredData(response.data.data);
+                } else {
+                    throw new Error("Unexpected response format");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching attendance data:", error);
+        }
     };
 
-    const paginate = (pageNumber) => {
-        if (pageNumber > 0 && pageNumber <= Math.ceil(filteredData.length / itemsPerPage)) {
-            setCurrentPage(pageNumber);
-        }
+
+    const renderTableHeader = () => {
+        return (
+            <thead className="bg-[#0141cf] text-white">
+                <tr>
+                    <th className="px-6 py-3">S.No</th>
+                    <th className="px-6 py-3">Teacher</th>
+                    <th className="px-6 py-3">Level</th>
+                    <th className="px-6 py-3">Section</th>
+                    <th className="px-6 py-3">Time-In Time</th>
+                    <th className="px-6 py-3">Time-Out Time</th>
+                </tr>
+            </thead>
+        );
+    };
+
+    const renderTableRows = () => {
+        return (
+            <tbody className="bg-[#ffffff] divide-y divide-gray-200">
+                {filteredData.map((item, index) => (
+                    <tr key={item._id}>
+                        <td className="px-6 py-4">{index + 1}</td>
+                        <td>{item.teacher}</td>
+                        <td>{item.level}</td>
+                        <td>{item.section}</td>
+                        <td>{item.checkInTime}</td>
+                        <td>{item.checkOutTime}</td>
+                    </tr>
+                ))}
+            </tbody>
+        );
     };
 
     return (
@@ -180,28 +225,8 @@ const AttendanceReport = () => {
 
                 <div className="overflow-x-auto pt-4">
                     <table className="min-w-full divide-y divide-gray-200 text-center">
-                        <thead className="bg-blue-0141cf">
-                            <tr>
-                                <th className="px-6 py-3">S.No</th>
-                                <th className="px-6 py-3">Teacher</th>
-                                <th className="px-6 py-3">Level</th>
-                                <th className="px-6 py-3">Section</th>
-                                <th className="px-6 py-3">Time-In Time</th>
-                                <th className="px-6 py-3">Time-Out Time</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-yellow-ffa500 divide-y divide-gray-200">
-                            {filteredData.map((item, index) => (
-                                <tr key={item._id}>
-                                    <td className="px-6 py-4">{index + 1}</td>
-                                    <td>{item.teacher}</td>
-                                    <td>{item.level}</td>
-                                    <td>{item.section}</td>
-                                    <td>{item.checkInTime}</td>
-                                    <td>{item.checkOutTime}</td>
-                                </tr>
-                            ))}
-                        </tbody>
+                        {renderTableHeader()}
+                        {renderTableRows()}
                     </table>
                 </div>
 
