@@ -41,7 +41,7 @@ const AttendanceReport = () => {
     ]);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(2);
+    const [itemsPerPage] = useState(40);
     const [initialLoad, setInitialLoad] = useState(true);
     const [dataRangeDisplay, setDataRangeDisplay] = useState("All Data");
     const [totalPages, setTotalPages] = useState(1);
