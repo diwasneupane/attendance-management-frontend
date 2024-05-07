@@ -50,6 +50,12 @@ const Opening = () => {
                     JSON.stringify({ pin: hashedPin, expiryTime })
                 );
 
+                const currentTime = Date.now();
+                if (currentTime > expiryTime) {
+                    localStorage.removeItem('validPin');
+                    navigate('/');
+                    return;
+                }
                 toast.success('PIN is valid!');
                 navigate('/attendance');
             } else {

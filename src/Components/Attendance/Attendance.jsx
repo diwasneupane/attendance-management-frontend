@@ -167,8 +167,8 @@ const Attendance = () => {
                 {
                     label: 'Yes',
                     onClick: () => {
-                        localStorage.removeItem('validPin'); // Remove PIN from local storage
-                        navigate('/'); // Redirect to the login page or home
+                        localStorage.removeItem('validPin');
+                        navigate('/');
                     },
                 },
                 {
@@ -259,7 +259,7 @@ const Attendance = () => {
                                     key={index}
                                     className="p-4 bg-gray-100 border-2 border-dashed rounded-2xl shadow-sm flex justify-between items-center"
                                 >
-                                    <div className="w-1/10 pr-4 border-r border-slate-900 py-4">
+                                    <div className="w-1/10 pr-4 border-r border-slate-900 ">
                                         <label className="block text-gray-700">Period {index + 1}</label>
                                     </div>
                                     <div className="w-1/4 pr-4">

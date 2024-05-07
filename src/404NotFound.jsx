@@ -6,8 +6,7 @@ import { motion } from 'framer-motion'; // Import framer-motion for animations
 
 const NotFound = () => {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center space-y-6"> {/* Center the content vertically */}
-            {/* Animation for the 404 heading */}
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center space-y-6">
             <motion.h1
                 className="text-6xl font-bold text-red-500"
                 initial={{ y: -100, opacity: 0 }}

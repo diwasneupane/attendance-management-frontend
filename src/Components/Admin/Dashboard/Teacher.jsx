@@ -7,7 +7,8 @@ import axios from 'axios';
 import { TailSpin } from 'react-loader-spinner';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000/api/v1',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+
     headers: {
         'Content-Type': 'application/json',
     },
@@ -35,9 +36,13 @@ const TeacherManagement = () => {
             setLoading(true);
             try {
                 const response = await axiosInstance.get('/teacher/get-teachers');
-                setTeachers(response.data.data || []);
+                const teacherData = (response.data.data || []).map(teacher => ({
+                    ...teacher,
+                    teacherName: teacher.teacherName.toUpperCase(), // Ensure teacher names are uppercase when fetching
+                }));
+                setTeachers(teacherData);
             } catch (error) {
-                toast.error('Error fetching teachers');
+                toast.error('Error fetching teachers.');
             } finally {
                 setLoading(false);
             }
@@ -48,7 +53,7 @@ const TeacherManagement = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ [name]: value });
+        setFormData({ [name]: value.toUpperCase() }); // Convert to uppercase on input
     };
 
     const handleSubmit = async (e) => {
@@ -63,26 +68,30 @@ const TeacherManagement = () => {
         if (editingIndex !== null) {
             try {
                 const teacherId = teachers[editingIndex]._id;
-                await axiosInstance.patch(`/teacher/update-teacher/${teacherId}`, { teacherName: formData.name });
+                await axiosInstance.patch(`/teacher/update-teacher/${teacherId}`, {
+                    teacherName: formData.name,
+                });
                 const updatedTeachers = [...teachers];
-                updatedTeachers[editingIndex].teacherName = formData.name;
+                updatedTeachers[editingIndex].teacherName = formData.name; // Update in uppercase
                 setTeachers(updatedTeachers);
                 setEditingIndex(null);
                 setFormData({ name: '' });
                 toast.success('Teacher updated successfully.');
             } catch (error) {
-                toast.error('Error updating teacher');
+                toast.error('Error updating teacher.');
             } finally {
                 setLoading(false);
             }
         } else {
             try {
-                const response = await axiosInstance.post('/teacher/create-teacher', { teacherName: formData.name });
-                setTeachers((prev) => [...prev, response.data.data]);
+                const response = await axiosInstance.post('/teacher/create-teacher', {
+                    teacherName: formData.name,
+                });
+                setTeachers((prev) => [...prev, { ...response.data.data, teacherName: formData.name }]); // Add in uppercase
                 setFormData({ name: '' });
                 toast.success('Teacher added successfully.');
             } catch (error) {
-                toast.error('Error adding teacher');
+                toast.error('Error adding teacher.');
             } finally {
                 setLoading(false);
             }
@@ -100,10 +109,10 @@ const TeacherManagement = () => {
         setLoading(true);
         try {
             await axiosInstance.delete(`/teacher/delete-teacher/${teacherId}`);
-            setTeachers((prev) => prev.filter((_, i) => i !== index));
+            setTeachers((prev) => prev.filter((_, i) => i !== index)); // Remove from list
             toast.success('Teacher deleted successfully.');
         } catch (error) {
-            toast.error('Error deleting teacher');
+            toast.error('Error deleting teacher.');
         } finally {
             setLoading(false);
         }
@@ -144,7 +153,7 @@ const TeacherManagement = () => {
                                     className="border border-gray-300 rounded-md p-4 flex justify-between items-center shadow-md hover:shadow-lg transition duration-300"
                                 >
                                     <div>
-                                        <h3 className="font-semibold">{teacher.teacherName}</h3>
+                                        <h3 className="font-semibold">{teacher.teacherName}</h3> {/* Ensure uppercase */}
                                     </div>
                                     <div>
                                         <button

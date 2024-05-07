@@ -28,31 +28,31 @@ const ChangePassword = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true); // Set loading state to true when submitting the form
+        setLoading(true);
 
         if (!currentPassword || !newPassword || !confirmPassword) {
             toast.error("All fields are required.");
-            setLoading(false); // Reset loading state
+            setLoading(false);
             return;
         }
 
         if (newPassword === currentPassword) {
             toast.error("New password cannot be the same as the old password.");
-            setLoading(false); // Reset loading state
+            setLoading(false);
             return;
         }
 
         if (newPassword !== confirmPassword) {
             toast.error("New passwords do not match.");
-            setLoading(false); // Reset loading state
+            setLoading(false);
             return;
         }
 
         try {
-            const authToken = getAuthToken();
+            const authToken = localStorage.getItem("authToken");
 
             await axios.patch(
-                "http://localhost:3000/api/v1/admin/admin-updatePassword",
+                `${import.meta.env.VITE_API_BASE_URL}/admin/admin-updatePassword`,
                 {
                     oldPassword: currentPassword,
                     newPassword: newPassword,
@@ -70,16 +70,26 @@ const ChangePassword = () => {
             setNewPassword("");
             setConfirmPassword("");
         } catch (error) {
-            if (error.response && error.response.status === 401) {
-                toast.error("Authorization error. Please log in again.");
+            setLoading(false);
+
+            if (error.response) {
+                const { status, data } = error.response;
+
+                let errorMessage = "Error changing password. Please try again.";
+
+                if (status === 400) {
+                    // Check if the data is an HTML response containing an error message
+                    if (typeof data === "string" && data.includes("Invalid old password")) {
+                        errorMessage = "Invalid old password. Please try again."; // Specific error message
+                    }
+                }
+
+                toast.error(errorMessage);
             } else {
-                toast.error("Error changing password.");
+                toast.error("Network error. Please check your internet connection.");
             }
-        } finally {
-            setLoading(false); // Reset loading state regardless of success or failure
         }
     };
-
     return (
         <div className="flex justify-center items-center py-8">
             <ToastContainer autoClose={3000} position="top-right" />

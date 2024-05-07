@@ -27,16 +27,16 @@ function AppRoutes() {
         <Routes>
 
             <Route path="/" element={<RedirectBasedOnPin />} />
+            <Route path="/attendance" element={<Attendance />} />
+
+
+
+
 
             <Route
                 path="/login"
                 element={authToken ? <Navigate to="/admin/dashboard" replace /> : <Login />}
             />
-
-
-
-            <Route path="/attendance" element={<Attendance />} />
-
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

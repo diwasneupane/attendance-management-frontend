@@ -11,7 +11,8 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { TailSpin } from 'react-loader-spinner'; // Imported TailSpin loader
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:3000/api/v1",
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+
     headers: {
         "Content-Type": "application/json",
     },
@@ -187,22 +188,50 @@ const AttendanceReport = () => {
             filterDataByDateRange({ startDate: selectedDate, endDate: selectedDate });
         }
     };
-
+    const handleDeleteAttendance = (attendanceId) => {
+        confirmAlert({
+            title: 'Confirm Delete',
+            message: 'Are you sure you want to delete this attendance record?',
+            buttons: [
+                {
+                    label: 'Yes',
+                    onClick: async () => {
+                        try {
+                            const response = await axiosInstance.delete(`/attendance/delete-attendance/${attendanceId}`);
+                            if (response.status === 200) {
+                                toast.success('Attendance record deleted successfully');
+                                fetchData(); // Refetch the data after successful deletion
+                            } else {
+                                toast.error('Failed to delete attendance record');
+                            }
+                        } catch (error) {
+                            console.error('Error deleting attendance:', error);
+                            toast.error('Failed to delete attendance record');
+                        }
+                    }
+                },
+                {
+                    label: 'No',
+                    onClick: () => { }
+                }
+            ]
+        });
+    };
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
 
     const renderTableHeader = () => {
         return (
-            <thead className="bg-[#0141cf] text-white">
+            <thead className="bg-blue-500 text-white">
                 <tr>
-                    <th className="px-6 py-3">S.No</th>
-                    <th className="px-6 py-3">Teacher</th>
-                    <th className="px-6 py-3">Level</th>
-                    <th className="px-6 py-3">Section</th>
-                    <th className="px-6 py-3">Time-In Time</th>
-                    <th className="px-6 py-3">Time-Out Time</th>
-                    <th className="px-6 py-3">Action</th>
+                    <th className="px-6 py-3 text-left">S.No</th>
+                    <th className="px-6 py-3 text-left">Teacher</th>
+                    <th className="px-6 py-3 text-left">Level</th>
+                    <th className="px-6 py-3 text-left">Section</th>
+                    <th className="px-6 py-3 text-left">Time-In Time</th>
+                    <th className="px-6 py-3 text-left">Time-Out Time</th>
+                    <th className="px-6 py-3 text-left">Action</th>
                 </tr>
             </thead>
         );
@@ -212,19 +241,23 @@ const AttendanceReport = () => {
         // Calculate start and end index for current page
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+
         return (
-            <tbody className="bg-[#ffffff] divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
                 {filteredData.slice(startIndex, endIndex).map((item, index) => (
-                    <tr key={item._id}>
-                        <td className="px-6 py-4">{startIndex + index + 1}</td>
-                        <td>{item.teacher}</td>
-                        <td>{item.level}</td>
-                        <td>{item.section}</td>
-                        <td>{item.checkInTime}</td>
-                        <td>{item.checkOutTime}</td>
-                        <td>
+                    <tr
+                        key={item._id}
+                        className="hover:bg-gray-100 transition-colors duration-200"
+                    >
+                        <td className="px-6 py-4 font-medium text-gray-900">{startIndex + index + 1}</td>
+                        <td className="px-6 py-4">{item.teacher}</td>
+                        <td className="px-6 py-4">{item.level}</td>
+                        <td className="px-6 py-4">{item.section}</td>
+                        <td className="px-6 py-4">{item.checkInTime}</td>
+                        <td className="px-6 py-4">{item.checkOutTime}</td>
+                        <td className="px-6 py-4">
                             <button
-                                className="text-red-500 hover:text-red-700"
+                                className="text-red-500 hover:text-red-700 transition-colors duration-200"
                                 onClick={() => handleDeleteAttendance(item._id)}
                             >
                                 <FontAwesomeIcon icon={faTrash} />
@@ -254,58 +287,67 @@ const AttendanceReport = () => {
                 )}
                 {!loading && ( // Show content when not loading
                     <div>
-                        <div className="flex items-center mb-4 gap-4">
-                            <div className="relative flex-1">
+                        <div className="flex items-center mb-6 gap-4">
+                            <div className="relative w-1/3 group">
                                 <input
                                     type="text"
                                     placeholder="Search by Teacher"
                                     value={searchTeacher}
                                     onChange={(e) => setSearchTeacher(e.target.value)}
-                                    className={`w-full pl-10 pr-4 py-2 border rounded-md ${dataRangeDisplay === "All Data" ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={dataRangeDisplay === "All Data"}
+                                    className={`w-full pl-10 pr-4 py-2 border rounded-md transition-colors duration-200 ${dataRangeDisplay === 'All Data'
+                                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                                        : 'bg-white hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                                        }`}
+                                    disabled={dataRangeDisplay === 'All Data'}
                                 />
-                                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <FontAwesomeIcon icon={faSearch} className="text-blue-500" />
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                                 </div>
-                                {dataRangeDisplay === "All Data" && (
-                                    <span className="text-red-500 absolute right-4 py-2 ">Please select a date range</span>
-                                )}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-sm py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                    Please select a date range
+                                </div>
                             </div>
 
-                            <div className="relative flex-1">
+                            <div className="relative w-1/3 group">
                                 <input
                                     type="text"
                                     placeholder="Search by Level"
                                     value={searchLevel}
                                     onChange={(e) => setSearchLevel(e.target.value)}
-                                    className={`w-full pl-10 pr-4 py-2 border rounded-md ${dataRangeDisplay === "All Data" ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={dataRangeDisplay === "All Data"}
+                                    className={`w-full pl-10 pr-4 py-2 border rounded-md transition-colors duration-200 ${dataRangeDisplay === 'All Data'
+                                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                                        : 'bg-white hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                                        }`}
+                                    disabled={dataRangeDisplay === 'All Data'}
                                 />
-                                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <FontAwesomeIcon icon={faSearch} className="text-blue-500" />
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                                 </div>
-                                {dataRangeDisplay === "All Data" && (
-                                    <span className="text-red-500 absolute right-4 py-2 ">Please select a date range</span>
-                                )}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-sm py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                    Please select a date range
+                                </div>
                             </div>
 
                             <FontAwesomeIcon
                                 icon={faCalendarAlt}
-                                className="cursor-pointer flex items-center px-4 py-2 bg-blue-500 text-white rounded-md"
+                                className="cursor-pointer text-white bg-blue-500 hover:bg-blue-600 transition-colors duration-200 p-2 rounded-md"
                                 onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                             />
 
                             <button
                                 onClick={handleDownload}
-                                className={`flex items-center px-4 py-2 bg-blue-500 text-white rounded-md ${dataRangeDisplay === "All Data" ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={dataRangeDisplay === "All Data"}
+                                className={`flex items-center px-4 py-2 bg-blue-500 text-white rounded-md transition-colors duration-200 ${dataRangeDisplay === 'All Data'
+                                    ? ' cursor-not-allowed relative group'
+                                    : 'hover:bg-blue-600'
+                                    }`}
+                                disabled={dataRangeDisplay === 'All Data'}
                             >
                                 <FontAwesomeIcon icon={faDownload} className="mr-2" />
                                 Download
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-sm py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                    Please select a date range
+                                </div>
                             </button>
-                            {dataRangeDisplay === "All Data" && (
-                                <span className="text-red-500 py-2 ">Please select a date range</span>
-                            )}
                         </div>
                         {isDatePickerOpen && (
                             <DateRangePicker

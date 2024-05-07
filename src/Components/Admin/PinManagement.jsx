@@ -5,23 +5,18 @@ import "react-toastify/dist/ReactToastify.css";
 import { confirmAlert } from "react-confirm-alert";
 import "react-confirm-alert/src/react-confirm-alert.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-    faPlus,
-    faEdit,
-    faTrash,
-    faSave,
-} from "@fortawesome/free-solid-svg-icons";
-import { TailSpin } from 'react-loader-spinner'; // Import TailSpin loader
+import { faPlus, faEdit, faTrash, faSave } from "@fortawesome/free-solid-svg-icons";
+import { TailSpin } from "react-loader-spinner";
 
-// Custom styling to hide number input arrows in different browsers
 const numberInputStyle = {
-    WebkitAppearance: "none", // Hide arrows in Chrome/Safari
-    MozAppearance: "textfield", // Hide arrows in Firefox
-    appearance: "none", // Hide arrows in Edge/IE
+    WebkitAppearance: "none",
+    MozAppearance: "textfield",
+    appearance: "none",
 };
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:3000/api/v1",
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+
     headers: {
         "Content-Type": "application/json",
     },
@@ -44,23 +39,25 @@ const PinManagement = () => {
     const [editingIndex, setEditingIndex] = useState(null);
     const [editedPin, setEditedPin] = useState("");
     const [validationError, setValidationError] = useState("");
-    const [loading, setLoading] = useState(false); // Add loading state
+    const [loading, setLoading] = useState(false);
+
+    const fetchPins = async () => {
+        try {
+            setLoading(true);
+            const response = await axiosInstance.get("/pin/view");
+            setPins(response.data.data || []);
+        } catch (error) {
+            toast.error("Error fetching PINs.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchPins = async () => {
-            try {
-                setLoading(true); // Set loading state when fetching pins
-                const response = await axiosInstance.get("/pin/view");
-                setPins(response.data.data || []);
-            } catch (error) {
-                toast.error("Error fetching PINs.");
-            } finally {
-                setLoading(false); // Reset loading state after fetching pins
-            }
-        };
-
         fetchPins();
     }, []);
+
+    const isUniquePin = (pin) => !pins.some((p) => p.pin === pin);
 
     const handleNewPinChange = (e) => {
         const value = e.target.value;
@@ -78,6 +75,11 @@ const PinManagement = () => {
             return;
         }
 
+        if (!isUniquePin(newPin)) {
+            toast.error("This PIN already exists. Please enter a unique PIN.");
+            return;
+        }
+
         confirmAlert({
             title: "Confirm Action",
             message: "Are you sure you want to add this PIN?",
@@ -86,20 +88,14 @@ const PinManagement = () => {
                     label: "Yes",
                     onClick: async () => {
                         try {
-                            setLoading(true); // Set loading state when adding pin
-                            const response = await axiosInstance.post("/pin/add", {
-                                pin: newPin,
-                            });
-                            setPins((prev) => [
-                                ...prev,
-                                { _id: response.data.data._id, pin: newPin },
-                            ]);
-                            setNewPin("");
+                            setLoading(true);
+                            await axiosInstance.post("/pin/add", { pin: newPin });
+                            fetchPins(); // Refresh the list after adding
                             toast.success("PIN added successfully.");
                         } catch (error) {
                             toast.error("Error adding PIN.");
                         } finally {
-                            setLoading(false); // Reset loading state after adding pin
+                            setLoading(false);
                         }
                     },
                 },
@@ -117,16 +113,23 @@ const PinManagement = () => {
 
     const handleEditedPinChange = (e) => {
         const value = e.target.value;
-        if (value.length <= 4) {
-            setEditedPin(value);
-        } else {
+        if (value.length > 4) {
             setValidationError("PIN must be exactly 4 digits.");
+        } else {
+            setValidationError("");
         }
+        setEditedPin(value);
     };
 
     const handleSaveEdit = async () => {
         if (editedPin.trim().length !== 4) {
             toast.error("PIN must be exactly 4 digits.");
+            return;
+        }
+
+        // Check if the edited PIN is unique in the list (excluding the current one)
+        if (!isUniquePin(editedPin) && pins[editingIndex].pin !== editedPin) {
+            toast.error("This PIN already exists. Please enter a unique PIN.");
             return;
         }
 
@@ -137,23 +140,18 @@ const PinManagement = () => {
                 {
                     label: "Yes",
                     onClick: async () => {
-                        const pinId = pins[editingIndex]._id;
                         try {
-                            setLoading(true); // Set loading state when saving edit
-                            await axiosInstance.put(`/pin/update/${pinId}`, {
+                            setLoading(true);
+                            await axiosInstance.put(`/pin/update/${pins[editingIndex]._id}`, {
                                 newPin: editedPin,
                             });
-                            setPins((prev) => {
-                                const updated = [...prev];
-                                updated[editingIndex].pin = editedPin;
-                                return updated;
-                            });
+                            fetchPins(); // Refresh the list after updating
                             setEditingIndex(null);
                             toast.success("PIN updated successfully.");
                         } catch (error) {
                             toast.error("Error updating PIN.");
                         } finally {
-                            setLoading(false); // Reset loading state after saving edit
+                            setLoading(false);
                         }
                     },
                 },
@@ -165,8 +163,6 @@ const PinManagement = () => {
     };
 
     const handleDeletePin = async (index) => {
-        const pinId = pins[index]._id;
-
         confirmAlert({
             title: "Confirm Deletion",
             message: "Are you sure you want to delete this PIN?",
@@ -175,14 +171,14 @@ const PinManagement = () => {
                     label: "Yes",
                     onClick: async () => {
                         try {
-                            setLoading(true); // Set loading state when deleting pin
-                            await axiosInstance.delete(`/pin/delete/${pinId}`);
-                            setPins((prev) => prev.filter((_, i) => i !== index));
+                            setLoading(true);
+                            await axiosInstance.delete(`/pin/delete/${pins[index]._id}`);
+                            fetchPins(); // Refresh the list after deletion
                             toast.success("PIN deleted successfully.");
                         } catch (error) {
                             toast.error("Error deleting PIN.");
                         } finally {
-                            setLoading(false); // Reset loading state after deleting pin
+                            setLoading(false);
                         }
                     },
                 },
@@ -192,14 +188,11 @@ const PinManagement = () => {
             ],
         });
     };
-
     return (
-        <div className="p-6  flex justify-center items-center">
+        <div className="p-6 flex justify-center items-center">
             <ToastContainer autoClose={3000} position="top-center" />
 
-            <div
-                className="bg-white p-8 border-2 border-dashed border-gray-300 rounded-lg shadow-lg w-full md:w-2/3 lg:w-1/2 xl:w-1/3"
-            >
+            <div className="bg-white p-8 border-2 border-dashed border-gray-300 rounded-lg shadow-lg w-full md:w-2/3 lg:w-1/2 xl:w-1/3">
                 <h2 className="text-2xl font-semibold text-center mb-6">Manage PINs</h2>
 
                 <div className="mb-6">
@@ -218,7 +211,9 @@ const PinManagement = () => {
                         onClick={handleAddPin}
                         className="mt-3 bg-indigo-500 text-white px-5 py-3 rounded-md hover:bg-indigo-600 transition-all duration-200 w-full"
                     >
-                        {loading ? <TailSpin color="#fff" height={20} width={20} /> : (
+                        {loading ? (
+                            <TailSpin color="#fff" height={20} width={20} />
+                        ) : (
                             <>
                                 <FontAwesomeIcon icon={faPlus} className="mr-2" />
                                 Add PIN
@@ -268,6 +263,7 @@ const PinManagement = () => {
                                     >
                                         <FontAwesomeIcon icon={faTrash} />
                                     </button>
+
                                 </div>
                             </div>
                         ))}
